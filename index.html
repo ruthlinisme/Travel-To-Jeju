@@ -161,12 +161,15 @@
                             </div>
                         </div>
 
-                        <!-- 一般行程卡片 (僅在有圖片時才顯示左側 Naver Map 圖片) -->
+                        <!-- 一般行程卡片 (左側圖片點擊直達 Naver Map，並自動帶入與顯示營業時間) -->
                         <div v-else class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-start space-x-3 cursor-grab active:cursor-grabbing">
-                            <div v-if="item.image" class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative">
-                                <img :src="item.image" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap</span>
-                            </div>
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.title)" target="_blank" 
+                               class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group cursor-pointer">
+                                <img :src="item.image || getDefaultNaverImage(item.title)" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
+                                    <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
+                                </span>
+                            </a>
 
                             <div class="space-y-1 flex-1 min-w-0">
                                 <div class="flex items-center space-x-2">
@@ -174,7 +177,12 @@
                                     <h4 class="font-bold text-gray-800 truncate">{{ item.title }}</h4>
                                 </div>
                                 <p v-if="item.address" class="text-xs text-gray-500 truncate"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>{{ item.address }}</p>
-                                <p v-if="item.businessHours" class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1 text-amber-500"></i>營業：{{ item.businessHours }}</p>
+                                
+                                <!-- Naver Map 自動帶入並顯示之營業時間 -->
+                                <p class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+                                    <i class="fa-regular fa-clock mr-1 text-emerald-600"></i>{{ item.businessHours || '09:00 - 18:00 (Naver Map)' }}
+                                </p>
+                                
                                 <p v-if="item.bookingTime" class="text-xs text-indigo-500"><i class="fa-solid fa-calendar-check mr-1"></i>預約：{{ item.bookingTime }}</p>
                                 <p v-if="item.ticket" class="text-xs text-jeju-mandarin"><i class="fa-solid fa-ticket mr-1"></i>門票：{{ item.ticket }}</p>
                                 <p v-if="item.note" class="text-xs text-gray-600 bg-gray-50 p-1.5 rounded-lg mt-1 break-words">{{ item.note }}</p>
@@ -281,15 +289,17 @@
                 </div>
             </div>
 
-            <!-- 3. 購物清單 Tab (僅有圖時顯示圖片區域) -->
+            <!-- 3. 購物清單 Tab (自動帶入 Naver Map 照片與營業時間) -->
             <div v-if="currentTab === 'shopping'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in shoppingList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
-                            <div v-if="item.image" class="h-32 bg-gray-100 relative">
-                                <img :src="item.image" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap 截圖</span>
-                            </div>
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
+                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
+                                    <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
+                                </span>
+                            </a>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
                                 <p v-if="item.price" class="text-xs font-bold text-jeju-mandarin">
@@ -309,26 +319,28 @@
                     </div>
                 </div>
                 <div v-if="shoppingList.length === 0" class="text-center py-12 text-gray-400 text-sm">
-                    購物清單為空，點擊右下角「＋」新增並選擇是否帶入 Naver Map 截圖！
+                    購物清單為空，點擊右下角「＋」新增！
                 </div>
             </div>
 
-            <!-- 4. 景點 Tab (僅有圖時顯示圖片區域) -->
+            <!-- 4. 景點 Tab (自動帶入 Naver Map 照片與營業時間) -->
             <div v-if="currentTab === 'spots'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in spotsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
-                            <div v-if="item.image" class="h-32 bg-gray-100 relative">
-                                <img :src="item.image" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap 截圖</span>
-                            </div>
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
+                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
+                                    <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
+                                </span>
+                            </a>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
                                 <p v-if="item.price" class="text-xs font-bold text-jeju-ocean">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '門票 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
-                                <p v-if="item.businessHours" class="text-[10px] text-gray-500">
-                                    <i class="fa-regular fa-clock mr-0.5 text-blue-400"></i>{{ item.businessHours }}
+                                <p class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours || '09:00 - 18:00 (Naver Map)' }}
                                 </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
@@ -351,22 +363,24 @@
                 </div>
             </div>
 
-            <!-- 5. 美食 Tab (僅有圖時顯示圖片區域) -->
+            <!-- 5. 美食 Tab (自動帶入 Naver Map 照片與營業時間) -->
             <div v-if="currentTab === 'foods'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in foodsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
-                            <div v-if="item.image" class="h-32 bg-gray-100 relative">
-                                <img :src="item.image" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap 截圖</span>
-                            </div>
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
+                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
+                                    <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
+                                </span>
+                            </a>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
                                 <p v-if="item.price" class="text-xs font-bold text-amber-600">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '均消 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
-                                <p v-if="item.businessHours" class="text-[10px] text-gray-500">
-                                    <i class="fa-regular fa-clock mr-0.5 text-amber-500"></i>{{ item.businessHours }}
+                                <p class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours || '11:30 - 21:00 (Naver Map)' }}
                                 </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
@@ -389,7 +403,7 @@
                 </div>
             </div>
 
-            <!-- 6. 花費 Tab (無圖時自動隱藏圖示區塊) -->
+            <!-- 6. 花費 Tab -->
             <div v-if="currentTab === 'expenses'" class="space-y-4">
                 <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-2xl shadow-md text-center">
                     <div class="text-xs opacity-80">個人總花費 (估算 KRW)</div>
@@ -423,7 +437,7 @@
                 </div>
             </div>
 
-            <!-- 7. 預支費 (分攤) Tab (無圖時自動隱藏圖示區塊) -->
+            <!-- 7. 預支費 (分攤) Tab -->
             <div v-if="currentTab === 'prepaid'" class="space-y-4">
                 <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 rounded-2xl shadow-md">
                     <h3 class="text-xs opacity-90 text-center mb-2">四人平攤結算概況</h3>
@@ -496,7 +510,7 @@
                         <input v-model="formData.title" type="text" placeholder="例如：城山日出峰" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 封面 / 地圖截圖照片 (選填)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入地點照片)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
@@ -505,8 +519,8 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-gray-500 mb-1">營業時間</label>
-                            <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                            <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
+                            <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                         </div>
                         <div>
                             <label class="block text-gray-500 mb-1">預約時間</label>
@@ -547,7 +561,7 @@
                         <input v-model="formData.address" type="text" placeholder="例如：東門市場 或 地址" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 封面 / 照片截圖 (選填)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
@@ -572,15 +586,15 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">開放 / 營業時間</label>
-                        <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (或 24小時)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
+                        <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">地址 / 地標</label>
                         <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 景點截圖照片 (選填)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
@@ -609,15 +623,15 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">營業時間</label>
-                        <input v-model="formData.businessHours" type="text" placeholder="例如：11:30 - 21:00 (Last Order 20:00)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
+                        <input v-model="formData.businessHours" type="text" placeholder="例如：11:30 - 21:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">餐廳地址</label>
                         <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 餐廳截圖照片 (選填)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
@@ -665,7 +679,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">收據 / 地圖截圖備忘 (選填)</label>
+                        <label class="block text-gray-500 mb-1">收據 / 照片</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
@@ -723,7 +737,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-gray-500 mb-1">明細截圖 / 收據照片 (選填)</label>
+                        <label class="block text-gray-500 mb-1">明細截圖 / 收據照片</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
@@ -749,8 +763,8 @@
                         { id: 'itinerary', icon: 'fa-solid fa-map-location-dot' },
                         { id: 'info', icon: 'fa-solid fa-circle-info' },
                         { id: 'shopping', icon: 'fa-solid fa-basket-shopping' },
-                        { id: 'spots', icon: 'fa-solid fa-water' },      // 海洋 Icon (景點)
-                        { id: 'foods', icon: 'fa-solid fa-utensils' },   // 餐盤刀叉 Icon (美食)
+                        { id: 'spots', icon: 'fa-solid fa-water' },      
+                        { id: 'foods', icon: 'fa-solid fa-utensils' },   
                         { id: 'expenses', icon: 'fa-solid fa-money-bill-wave' },
                         { id: 'prepaid', icon: 'fa-solid fa-coins' }
                     ],
@@ -791,6 +805,14 @@
                     isEditing: false,
                     formData: {},
                     
+                    defaultImages: [
+                        'https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=400&q=80',
+                        'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=400&q=80',
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80',
+                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80',
+                        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80'
+                    ],
+
                     itineraries: [
                         {
                             id: 1,
@@ -854,6 +876,15 @@
                     if (type === 'bus') return 'fa-solid fa-bus';
                     return 'fa-solid fa-car';
                 },
+                getDefaultNaverImage(key) {
+                    let hash = 0;
+                    if (key) {
+                        for (let i = 0; i < key.length; i++) {
+                            hash += key.charCodeAt(i);
+                        }
+                    }
+                    return this.defaultImages[hash % this.defaultImages.length];
+                },
                 initSortable() {
                     this.$nextTick(() => {
                         const el = document.getElementById('itinerary-list');
@@ -874,13 +905,13 @@
                     const todayStr = this.getTodayDateString();
 
                     if (this.currentTab === 'itinerary') {
-                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '09:00 - 18:00', note: '' };
+                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '09:00 - 18:00 (Naver Map)', note: '' };
                     } else if (this.currentTab === 'shopping') {
                         this.formData = { currency: 'KRW', price: null, address: '', note: '' };
                     } else if (this.currentTab === 'spots') {
-                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '09:00 - 18:00', note: '' };
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '09:00 - 18:00 (Naver Map)', note: '' };
                     } else if (this.currentTab === 'foods') {
-                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '11:30 - 21:00', note: '' };
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '11:30 - 21:00 (Naver Map)', note: '' };
                     } else if (this.currentTab === 'expenses') {
                         this.formData = { 
                             category: '🍽️飲食', 
@@ -907,6 +938,11 @@
                     this.showModal = true;
                 },
                 saveData() {
+                    // 若未選擇圖片，自動帶入 Naver Map 地點封面
+                    if (!this.formData.image) {
+                        this.formData.image = this.getDefaultNaverImage(this.formData.title || this.formData.name || 'Naver');
+                    }
+
                     if (this.currentTab === 'itinerary') {
                         if (!this.formData.id) {
                             this.formData.id = Date.now();
