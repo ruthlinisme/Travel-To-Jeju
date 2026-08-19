@@ -114,7 +114,7 @@
                     <div class="flex items-center space-x-3">
                         <i :class="weather.icon" class="text-3xl"></i>
                         <div>
-                            <div class="text-xs opacity-90">濟州島今日天氣</div>
+                            <div class="text-xs opacity-90">濟州島天氣預報</div>
                             <div class="text-xl font-bold">{{ weather.temp }}°C <span class="text-xs font-normal">({{ weather.condition }})</span></div>
                         </div>
                     </div>
@@ -124,12 +124,12 @@
                     </div>
                 </div>
 
-                <!-- 類別篩選器 -->
+                <!-- 類別篩選器 (已加上 Emoji) -->
                 <div class="flex items-center justify-between pt-2">
                     <span class="text-sm font-bold text-gray-700">行程明細</span>
                     <select v-model="filterCategory" class="text-xs bg-white border border-gray-300 rounded-lg px-2 py-1 focus:outline-none">
                         <option value="全部">全部分類</option>
-                        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                        <option v-for="cat in categories" :key="cat.name" :value="cat.name">{{ cat.label }}</option>
                     </select>
                 </div>
 
@@ -144,9 +144,9 @@
                         </div>
 
                         <!-- 卡片呈現：航班專用格式 vs 一般行程卡片 -->
-                        <div v-if="item.category === '航班'" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-2xl shadow-md space-y-2">
+                        <div v-if="item.category === '✈️航班' || item.category === '航班'" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-2xl shadow-md space-y-2">
                             <div class="flex justify-between items-center text-xs opacity-80">
-                                <span><i class="fa-solid fa-plane-departure mr-1"></i>航班資訊</span>
+                                <span><i class="fa-solid fa-plane-departure mr-1"></i>{{ item.title }}</span>
                                 <span>{{ item.flightNo }}</span>
                             </div>
                             <div class="flex justify-between items-center py-1">
@@ -169,7 +169,7 @@
                         <div v-else class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-start cursor-grab active:cursor-grabbing">
                             <div class="space-y-1 flex-1">
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-jeju-ocean font-medium">{{ item.category }}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-jeju-ocean font-medium">{{ getCategoryLabel(item.category) }}</span>
                                     <h4 class="font-bold text-gray-800">{{ item.title }}</h4>
                                 </div>
                                 <p v-if="item.time" class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i>營業/預訂時間：{{ item.time }}</p>
@@ -193,7 +193,7 @@
                 </div>
 
                 <div v-if="filteredItinerary.length === 0" class="text-center py-12 text-gray-400 text-sm">
-                    尚無行程，請點擊右下角「＋」新增！
+                    本日無行程，請點擊右下角「＋」新增！
                 </div>
             </div>
 
@@ -358,7 +358,7 @@
             <i class="fa-solid fa-plus"></i>
         </button>
 
-        <!-- 通用 Modal 彈出視窗 (用於新增/編輯) -->
+        <!-- 通用 Modal 彈出視窗 -->
         <div v-if="showModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
             <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
                 <div class="flex justify-between items-center border-b pb-3">
@@ -371,7 +371,7 @@
                     <div>
                         <label class="block text-gray-500 mb-1">分類</label>
                         <select v-model="formData.category" class="w-full border rounded-xl p-2.5 bg-gray-50">
-                            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+                            <option v-for="c in categories" :key="c.name" :value="c.name">{{ c.label }}</option>
                         </select>
                     </div>
                     <div>
@@ -462,25 +462,44 @@
                         rainProb: 10
                     },
                     filterCategory: '全部',
-                    categories: ['景點', '住宿', '美食', '購物', '航班', '其他'],
+                    categories: [
+                        { name: '景點', label: '🏝️ 景點' },
+                        { name: '住宿', label: '🏕️ 住宿' },
+                        { name: '美食', label: '🍽️ 美食' },
+                        { name: '購物', label: '💸 購物' },
+                        { name: '航班', label: '✈️ 航班' },
+                        { name: '其他', label: '🎲 其他' }
+                    ],
                     krwInput: 100000,
                     showModal: false,
                     isEditing: false,
                     formData: {},
                     
-                    // 初始資料
+                    // 預設行程：包含 9/19 去程與 9/25 回程航班資訊
                     itineraries: [
                         {
                             id: 1,
-                            dayIndex: 0,
-                            category: '航班',
-                            title: '易斯達航空 ZE886',
+                            dayIndex: 0, // 9/19 (Fri)
+                            category: '✈️航班',
+                            title: '去程：易斯達航空 ZE886',
                             fromCode: 'TPE',
                             toCode: 'CJU',
                             depTime: '02:50',
                             arrTime: '06:05',
                             duration: '2h 15m',
                             flightNo: 'ZE886'
+                        },
+                        {
+                            id: 2,
+                            dayIndex: 6, // 9/25 (Thu)
+                            category: '✈️航班',
+                            title: '回程：易斯達航空 ZE885',
+                            fromCode: 'CJU',
+                            toCode: 'TPE',
+                            depTime: '22:40',
+                            arrTime: '23:50',
+                            duration: '2h 10m',
+                            flightNo: 'ZE885'
                         }
                     ],
                     shoppingList: [],
@@ -492,7 +511,9 @@
                 filteredItinerary() {
                     return this.itineraries.filter(item => {
                         const matchesDay = item.dayIndex === this.selectedDayIndex;
-                        const matchesCat = this.filterCategory === '全部' || item.category === this.filterCategory;
+                        const cleanItemCat = item.category.replace(/^[^\w\s\u4e00-\u9fa5]+/, '').trim();
+                        const cleanFilterCat = this.filterCategory.replace(/^[^\w\s\u4e00-\u9fa5]+/, '').trim();
+                        const matchesCat = this.filterCategory === '全部' || cleanItemCat === cleanFilterCat;
                         return matchesDay && matchesCat;
                     });
                 },
@@ -500,7 +521,6 @@
                     return this.expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
                 },
                 calculatedBalances() {
-                    // 簡易平攤邏輯計算
                     const balances = {};
                     this.prepaidList.forEach(p => {
                         if (p.payer) {
@@ -514,6 +534,10 @@
                 this.initSortable();
             },
             methods: {
+                getCategoryLabel(catName) {
+                    const found = this.categories.find(c => c.name === catName || c.label.includes(catName));
+                    return found ? found.label : catName;
+                },
                 getTransIcon(type) {
                     if (type === 'walk') return 'fa-solid fa-person-walking';
                     if (type === 'bus') return 'fa-solid fa-bus';
