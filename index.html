@@ -21,10 +21,10 @@
                 extend: {
                     colors: {
                         jeju: {
-                            bg: '#FDFBF7',       // 延續 Banner 右側溫暖天空奶油底色
-                            ocean: '#3B82F6',    // 濟州海洋藍
+                            bg: '#FDFBF7',       // 奶油底色
+                            ocean: '#3B82F6',    // 海洋藍
                             sky: '#0EA5E9',      // 晴空藍
-                            mandarin: '#F97316', // 濟州柑橘橘
+                            mandarin: '#F97316', // 柑橘橘
                             sand: '#FDE68A',     // 沙灘黃
                             card: '#FFFFFF',
                             text: '#2D3748'
@@ -45,7 +45,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* 頁首 Banner 容器：固定高度 250px、圖片滿版與靠 left 對齊 */
+        /* 頁首 Banner 容器 */
         .banner-container {
             position: relative;
             height: 250px;
@@ -67,7 +67,6 @@
             min-height: calc(100vh - 220px);
             padding-bottom: 80px;
         }
-        /* 隱藏滾動條但保持滾動 */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -109,7 +108,7 @@
                     </button>
                 </div>
 
-                <!-- 每日行程上方 Weather 天氣資訊區塊 -->
+                <!-- 天氣資訊區塊 -->
                 <div class="bg-gradient-to-r from-blue-400 to-teal-400 text-white rounded-2xl p-4 shadow-md flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <i :class="weather.icon" class="text-3xl"></i>
@@ -164,14 +163,12 @@
                             </div>
                         </div>
 
-                        <!-- 一般行程卡片 (左側顯示 Naver Map 封面截圖/照片) -->
+                        <!-- 一般行程卡片 (帶有 Naver Map 封面截圖) -->
                         <div v-else class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-start space-x-3 cursor-grab active:cursor-grabbing">
-                            <!-- Naver Map 封面截圖圖片區塊 -->
-                            <div v-if="item.image" class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group">
+                            <div v-if="item.image" class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative">
                                 <img :src="item.image" class="w-full h-full object-cover">
-                                <span class="absolute bottom-0 inset-x-0 bg-black/50 text-[9px] text-white text-center py-0.5 font-sans">NaverMap</span>
+                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap</span>
                             </div>
-                            <!-- 無圖片時的 Naver Map 預設圖標封面 -->
                             <div v-else class="w-20 h-20 flex-shrink-0 rounded-xl bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center text-emerald-600">
                                 <i class="fa-solid fa-map-location-dot text-2xl mb-1"></i>
                                 <span class="text-[9px] font-bold">Naver Map</span>
@@ -183,10 +180,10 @@
                                     <h4 class="font-bold text-gray-800 truncate">{{ item.title }}</h4>
                                 </div>
                                 <p v-if="item.address" class="text-xs text-gray-500 truncate"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>{{ item.address }}</p>
-                                <p v-if="item.businessHours" class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1"></i>營業：{{ item.businessHours }}</p>
+                                <p v-if="item.businessHours" class="text-xs text-gray-500"><i class="fa-regular fa-clock mr-1 text-amber-500"></i>營業：{{ item.businessHours }}</p>
                                 <p v-if="item.bookingTime" class="text-xs text-indigo-500"><i class="fa-solid fa-calendar-check mr-1"></i>預約：{{ item.bookingTime }}</p>
                                 <p v-if="item.ticket" class="text-xs text-jeju-mandarin"><i class="fa-solid fa-ticket mr-1"></i>門票：{{ item.ticket }}</p>
-                                <p v-if="item.note" class="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg mt-1 break-words">{{ item.note }}</p>
+                                <p v-if="item.note" class="text-xs text-gray-600 bg-gray-50 p-1.5 rounded-lg mt-1 break-words">{{ item.note }}</p>
                             </div>
 
                             <div class="flex flex-col items-end space-y-2 flex-shrink-0">
@@ -297,6 +294,7 @@
                         <div>
                             <div class="h-32 bg-gray-100 relative">
                                 <img :src="item.image || 'https://via.placeholder.com/150'" class="w-full h-full object-cover">
+                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap / 照片</span>
                             </div>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
@@ -317,7 +315,7 @@
                     </div>
                 </div>
                 <div v-if="shoppingList.length === 0" class="text-center py-12 text-gray-400 text-sm">
-                    購物清單為空，快點選右下角「＋」新增必買好物！
+                    購物清單為空，點擊右下角「＋」上傳 Naver Map 截圖或照片！
                 </div>
             </div>
 
@@ -328,6 +326,7 @@
                         <div>
                             <div class="h-32 bg-gray-100 relative">
                                 <img :src="item.image || 'https://via.placeholder.com/150'" class="w-full h-full object-cover">
+                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap 截圖</span>
                             </div>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
@@ -354,7 +353,7 @@
                     </div>
                 </div>
                 <div v-if="spotsList.length === 0" class="text-center py-12 text-gray-400 text-sm">
-                    景點清單為空，點擊右下角「＋」新增想去打卡的私房景點！
+                    景點清單為空，點擊右下角「＋」新增並上傳 Naver Map 景點截圖！
                 </div>
             </div>
 
@@ -365,6 +364,7 @@
                         <div>
                             <div class="h-32 bg-gray-100 relative">
                                 <img :src="item.image || 'https://via.placeholder.com/150'" class="w-full h-full object-cover">
+                                <span class="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5">NaverMap 截圖</span>
                             </div>
                             <div class="p-3 space-y-1">
                                 <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
@@ -391,11 +391,11 @@
                     </div>
                 </div>
                 <div v-if="foodsList.length === 0" class="text-center py-12 text-gray-400 text-sm">
-                    美食口袋名單為空，點擊右下角「＋」新增濟州島必吃美食！
+                    美食口袋名單為空，點擊右下角「＋」新增並上傳 Naver Map 餐廳截圖！
                 </div>
             </div>
 
-            <!-- 6. 花費 Tab -->
+            <!-- 6. 花費 Tab (包含截圖/收據預覽) -->
             <div v-if="currentTab === 'expenses'" class="space-y-4">
                 <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-2xl shadow-md text-center">
                     <div class="text-xs opacity-80">個人總花費 (估算 KRW)</div>
@@ -404,17 +404,20 @@
                 </div>
 
                 <div class="space-y-2">
-                    <div v-for="(e, idx) in expenses" :key="idx" class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                        <div class="space-y-0.5">
-                            <div class="font-bold text-sm text-gray-800 flex items-center space-x-1">
-                                <span class="text-xs px-1.5 py-0.5 bg-slate-100 rounded-md">{{ e.category }}</span>
-                                <span>{{ e.name }}</span>
+                    <div v-for="(e, idx) in expenses" :key="idx" class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center space-x-3">
+                        <div v-if="e.image" class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+                            <img :src="e.image" class="w-full h-full object-cover">
+                        </div>
+                        <div class="space-y-0.5 flex-1 min-w-0">
+                            <div class="font-bold text-sm text-gray-800 flex items-center space-x-1 truncate">
+                                <span class="text-xs px-1.5 py-0.5 bg-slate-100 rounded-md flex-shrink-0">{{ e.category }}</span>
+                                <span class="truncate">{{ e.name }}</span>
                             </div>
                             <div class="text-[10px] text-gray-400">
                                 {{ e.date }} · <span class="font-medium text-gray-600">{{ e.paymentMethod }}</span>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex-shrink-0">
                             <div class="font-bold text-jeju-mandarin text-sm">
                                 {{ e.currency === 'TWD' ? 'NT$ ' + e.amount.toLocaleString() : '₩ ' + e.amount.toLocaleString() }}
                             </div>
@@ -426,7 +429,7 @@
                 </div>
             </div>
 
-            <!-- 7. 預支費 (分攤) Tab -->
+            <!-- 7. 預支費 (分攤) Tab (包含截圖/明細預覽) -->
             <div v-if="currentTab === 'prepaid'" class="space-y-4">
                 <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 rounded-2xl shadow-md">
                     <h3 class="text-xs opacity-90 text-center mb-2">四人平攤結算概況</h3>
@@ -442,15 +445,18 @@
 
                 <div class="space-y-2">
                     <div v-for="(p, idx) in prepaidList" :key="idx" class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 space-y-1.5">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="font-bold text-sm text-gray-800 flex items-center space-x-1">
-                                    <span class="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">{{ p.category }}</span>
-                                    <span>{{ p.name }}</span>
+                        <div class="flex justify-between items-start space-x-2">
+                            <div v-if="p.image" class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+                                <img :src="p.image" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-gray-800 flex items-center space-x-1 truncate">
+                                    <span class="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md flex-shrink-0">{{ p.category }}</span>
+                                    <span class="truncate">{{ p.name }}</span>
                                 </div>
                                 <div class="text-[10px] text-gray-400 mt-0.5">{{ p.date }}</div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex-shrink-0">
                                 <div class="font-bold text-gray-800 text-sm">
                                     {{ p.currency === 'TWD' ? 'NT$ ' + p.amount.toLocaleString() : '₩ ' + p.amount.toLocaleString() }}
                                 </div>
@@ -483,7 +489,7 @@
                     <button @click="showModal = false" class="text-gray-400"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
 
-                <!-- 1. 行程 Modal (包含 Naver Map 封面圖片上傳) -->
+                <!-- 1. 行程 Modal -->
                 <div v-if="currentTab === 'itinerary'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">類別</label>
@@ -547,12 +553,12 @@
                         <input v-model="formData.address" type="text" placeholder="例如：東門市場 或 地址" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">上傳圖片</label>
-                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
+                        <label class="block text-gray-500 mb-1">Naver Map 封面 / 照片截圖</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
 
-                <!-- 3. 景點 Modal (包含營業時間、備註) -->
+                <!-- 3. 景點 Modal -->
                 <div v-if="currentTab === 'spots'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">景點名稱</label>
@@ -580,8 +586,8 @@
                         <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">上傳圖片</label>
-                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
+                        <label class="block text-gray-500 mb-1">Naver Map 景點截圖照片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">特色與備註</label>
@@ -589,7 +595,7 @@
                     </div>
                 </div>
 
-                <!-- 4. 美食 Modal (包含營業時間、備註) -->
+                <!-- 4. 美食 Modal -->
                 <div v-if="currentTab === 'foods'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">餐廳名稱</label>
@@ -617,8 +623,8 @@
                         <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">上傳圖片</label>
-                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
+                        <label class="block text-gray-500 mb-1">Naver Map 餐廳截圖照片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">推薦招牌與備註</label>
@@ -663,6 +669,10 @@
                             <option value="信用卡">💳 信用卡</option>
                             <option value="現金">💵 現金</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">收據 / 地圖截圖備忘</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
 
@@ -716,6 +726,11 @@
                                 <span>{{ m }}</span>
                             </label>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-500 mb-1">明細截圖 / 收據照片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
 
@@ -865,9 +880,13 @@
                     const todayStr = this.getTodayDateString();
 
                     if (this.currentTab === 'itinerary') {
-                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '', note: '' };
-                    } else if (this.currentTab === 'shopping' || this.currentTab === 'spots' || this.currentTab === 'foods') {
-                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '', note: '' };
+                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '09:00 - 18:00', note: '' };
+                    } else if (this.currentTab === 'shopping') {
+                        this.formData = { currency: 'KRW', price: null, address: '', note: '' };
+                    } else if (this.currentTab === 'spots') {
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '09:00 - 18:00', note: '' };
+                    } else if (this.currentTab === 'foods') {
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '11:30 - 21:00', note: '' };
                     } else if (this.currentTab === 'expenses') {
                         this.formData = { 
                             category: '🍽️飲食', 
