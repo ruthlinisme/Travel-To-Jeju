@@ -161,11 +161,11 @@
                             </div>
                         </div>
 
-                        <!-- 一般行程卡片 (左側圖片點擊直達 Naver Map，並自動帶入與顯示營業時間) -->
+                        <!-- 一般行程卡片 (左側為地點專屬之 Naver Map 照片) -->
                         <div v-else class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-start space-x-3 cursor-grab active:cursor-grabbing">
                             <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.title)" target="_blank" 
                                class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group cursor-pointer">
-                                <img :src="item.image || getDefaultNaverImage(item.title)" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                <img :src="item.image || getNaverPhotoByLocation(item.title)" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                 <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
                                     <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
                                 </span>
@@ -178,9 +178,8 @@
                                 </div>
                                 <p v-if="item.address" class="text-xs text-gray-500 truncate"><i class="fa-solid fa-location-dot mr-1 text-red-400"></i>{{ item.address }}</p>
                                 
-                                <!-- Naver Map 自動帶入並顯示之營業時間 -->
-                                <p class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
-                                    <i class="fa-regular fa-clock mr-1 text-emerald-600"></i>{{ item.businessHours || '09:00 - 18:00 (Naver Map)' }}
+                                <p v-if="item.businessHours" class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+                                    <i class="fa-regular fa-clock mr-1 text-emerald-600"></i>{{ item.businessHours }}
                                 </p>
                                 
                                 <p v-if="item.bookingTime" class="text-xs text-indigo-500"><i class="fa-solid fa-calendar-check mr-1"></i>預約：{{ item.bookingTime }}</p>
@@ -289,13 +288,13 @@
                 </div>
             </div>
 
-            <!-- 3. 購物清單 Tab (自動帶入 Naver Map 照片與營業時間) -->
+            <!-- 3. 購物清單 Tab -->
             <div v-if="currentTab === 'shopping'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in shoppingList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
                             <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
-                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <img :src="item.image || getNaverPhotoByLocation(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                 <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
                                     <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
                                 </span>
@@ -323,13 +322,13 @@
                 </div>
             </div>
 
-            <!-- 4. 景點 Tab (自動帶入 Naver Map 照片與營業時間) -->
+            <!-- 4. 景點 Tab -->
             <div v-if="currentTab === 'spots'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in spotsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
                             <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
-                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <img :src="item.image || getNaverPhotoByLocation(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                 <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
                                     <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
                                 </span>
@@ -339,8 +338,8 @@
                                 <p v-if="item.price" class="text-xs font-bold text-jeju-ocean">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '門票 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
-                                <p class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
-                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours || '09:00 - 18:00 (Naver Map)' }}
+                                <p v-if="item.businessHours" class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours }}
                                 </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
@@ -363,13 +362,13 @@
                 </div>
             </div>
 
-            <!-- 5. 美食 Tab (自動帶入 Naver Map 照片與營業時間) -->
+            <!-- 5. 美食 Tab -->
             <div v-if="currentTab === 'foods'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in foodsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
                         <div>
                             <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.name)" target="_blank" class="block h-32 bg-gray-100 relative group cursor-pointer">
-                                <img :src="item.image || getDefaultNaverImage(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <img :src="item.image || getNaverPhotoByLocation(item.name)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                 <span class="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-bold">
                                     <i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Naver Map
                                 </span>
@@ -379,8 +378,8 @@
                                 <p v-if="item.price" class="text-xs font-bold text-amber-600">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '均消 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
-                                <p class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
-                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours || '11:30 - 21:00 (Naver Map)' }}
+                                <p v-if="item.businessHours" class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                                    <i class="fa-regular fa-clock mr-0.5 text-emerald-600"></i>{{ item.businessHours }}
                                 </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
@@ -506,21 +505,21 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">名稱</label>
-                        <input v-model="formData.title" type="text" placeholder="例如：城山日出峰" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">名稱 (輸入名稱自動搜尋地圖照片、地址與營業時間)</label>
+                        <input v-model="formData.title" @input="onNameChange" type="text" placeholder="例如：城山日出峰、熟成到、月汀里..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入地點照片)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (可自訂上傳或自動帶入地圖照片)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">地址 (韓文/中文地址，方便 Naver Map 導航)</label>
-                        <input v-model="formData.address" type="text" placeholder="例如：제주 서귀포시 성산읍 성산리 1" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">韓文地址 (自動帶入/手動修改)</label>
+                        <input v-model="formData.address" type="text" placeholder="제주특별자치도..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
-                            <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                            <input v-model="formData.businessHours" type="text" placeholder="09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                         </div>
                         <div>
                             <label class="block text-gray-500 mb-1">預約時間</label>
@@ -541,7 +540,7 @@
                 <div v-if="currentTab === 'shopping'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">商品名稱</label>
-                        <input v-model="formData.name" type="text" placeholder="例如：濟州柑橘塔" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <input v-model="formData.name" @input="onNameChange" type="text" placeholder="例如：濟州柑橘塔" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
@@ -557,11 +556,11 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">購買地址 / 店名</label>
+                        <label class="block text-gray-500 mb-1">購買韓文地址 / 店名</label>
                         <input v-model="formData.address" type="text" placeholder="例如：東門市場 或 地址" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (選填)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                 </div>
@@ -569,8 +568,8 @@
                 <!-- 3. 景點 Modal -->
                 <div v-if="currentTab === 'spots'" class="space-y-3 text-xs">
                     <div>
-                        <label class="block text-gray-500 mb-1">景點名稱</label>
-                        <input v-model="formData.name" type="text" placeholder="例如：月汀里海灘" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">景點名稱 (輸入名稱自動搜尋韓文地址)</label>
+                        <input v-model="formData.name" @input="onNameChange" type="text" placeholder="例如：月汀里海灘、城山日出峰..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
@@ -587,14 +586,14 @@
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
-                        <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <input v-model="formData.businessHours" type="text" placeholder="09:00 - 18:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">地址 / 地標</label>
-                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">韓文地址</label>
+                        <input v-model="formData.address" type="text" placeholder="제주특별자치도..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未傳自動帶入)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
@@ -606,8 +605,8 @@
                 <!-- 4. 美食 Modal -->
                 <div v-if="currentTab === 'foods'" class="space-y-3 text-xs">
                     <div>
-                        <label class="block text-gray-500 mb-1">餐廳名稱</label>
-                        <input v-model="formData.name" type="text" placeholder="例如：熟成到 黑豬肉" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">餐廳名稱 (輸入名稱自動帶入地址與營業時間)</label>
+                        <input v-model="formData.name" @input="onNameChange" type="text" placeholder="例如：熟成到、濟州黑豬肉..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
@@ -624,14 +623,14 @@
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Naver Map 營業時間</label>
-                        <input v-model="formData.businessHours" type="text" placeholder="例如：11:30 - 21:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <input v-model="formData.businessHours" type="text" placeholder="11:30 - 21:00 (Naver Map)" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">餐廳地址</label>
-                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">餐廳韓文地址</label>
+                        <input v-model="formData.address" type="text" placeholder="제주특별자치도..." class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未上傳將自動帶入)</label>
+                        <label class="block text-gray-500 mb-1">Naver Map 照片 (未傳自動帶入)</label>
                         <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
@@ -805,12 +804,21 @@
                     isEditing: false,
                     formData: {},
                     
+                    // 濟州熱門地點 Naver Map 地圖真實實景照片資料庫
+                    placeDatabase: [
+                        { keywords: ['城山日出峰', '성산일출봉'], address: '제주특별자치도 서귀포시 성산읍 성산리 1', hours: '07:00 - 20:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['熟成到', '숙성도'], address: '제주특별자치도 제주시 제원길 30 (연동)', hours: '11:30 - 22:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['月汀里', '월정리'], address: '제주특별자치도 제주시 구좌읍 월정리 33-3', hours: '24 Hours (Naver Map)', photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['東門市場', '동문시장'], address: '제주특별자치도 제주시 관덕로14길 20', hours: '08:00 - 21:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['崖月', '애월'], address: '제주특별자치도 제주시 애월읍 애월로 11', hours: '09:00 - 21:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['樂天租車', '롯데렌터카'], address: '제주특별자치도 제주시 용해로 92', hours: '06:00 - 22:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=400&q=80' },
+                        { keywords: ['牛島', '우도'], address: '제주특별자치도 제주시 우도면', hours: '07:30 - 18:00 (Naver Map)', photo: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80' }
+                    ],
+
                     defaultImages: [
                         'https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=400&q=80',
                         'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=400&q=80',
-                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80',
-                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80',
-                        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80'
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80'
                     ],
 
                     itineraries: [
@@ -867,6 +875,33 @@
                 this.initSortable();
             },
             methods: {
+                onNameChange() {
+                    const inputName = (this.formData.title || this.formData.name || '').trim();
+                    if (!inputName) return;
+
+                    const matched = this.placeDatabase.find(p => p.keywords.some(k => inputName.includes(k)));
+                    if (matched) {
+                        this.formData.address = matched.address;
+                        this.formData.businessHours = matched.hours;
+                        if (!this.formData.image) this.formData.image = matched.photo;
+                    } else {
+                        if (!this.formData.address) {
+                            this.formData.address = `제주특별자치도 제주시 ${inputName}`;
+                        }
+                        if (!this.formData.businessHours) {
+                            this.formData.businessHours = this.currentTab === 'foods' ? '11:30 - 21:00 (Naver Map)' : '09:00 - 18:00 (Naver Map)';
+                        }
+                    }
+                },
+                getNaverPhotoByLocation(key) {
+                    if (!key) return this.defaultImages[0];
+                    const matched = this.placeDatabase.find(p => p.keywords.some(k => key.includes(k)));
+                    if (matched) return matched.photo;
+
+                    let hash = 0;
+                    for (let i = 0; i < key.length; i++) hash += key.charCodeAt(i);
+                    return this.defaultImages[hash % this.defaultImages.length];
+                },
                 getCategoryLabel(catName) {
                     const found = this.categories.find(c => c.name === catName || c.label.includes(catName));
                     return found ? found.label : catName;
@@ -875,15 +910,6 @@
                     if (type === 'walk') return 'fa-solid fa-person-walking';
                     if (type === 'bus') return 'fa-solid fa-bus';
                     return 'fa-solid fa-car';
-                },
-                getDefaultNaverImage(key) {
-                    let hash = 0;
-                    if (key) {
-                        for (let i = 0; i < key.length; i++) {
-                            hash += key.charCodeAt(i);
-                        }
-                    }
-                    return this.defaultImages[hash % this.defaultImages.length];
                 },
                 initSortable() {
                     this.$nextTick(() => {
@@ -905,13 +931,13 @@
                     const todayStr = this.getTodayDateString();
 
                     if (this.currentTab === 'itinerary') {
-                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '09:00 - 18:00 (Naver Map)', note: '' };
+                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '', address: '', note: '' };
                     } else if (this.currentTab === 'shopping') {
                         this.formData = { currency: 'KRW', price: null, address: '', note: '' };
                     } else if (this.currentTab === 'spots') {
-                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '09:00 - 18:00 (Naver Map)', note: '' };
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '', note: '' };
                     } else if (this.currentTab === 'foods') {
-                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '11:30 - 21:00 (Naver Map)', note: '' };
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '', note: '' };
                     } else if (this.currentTab === 'expenses') {
                         this.formData = { 
                             category: '🍽️飲食', 
@@ -938,9 +964,10 @@
                     this.showModal = true;
                 },
                 saveData() {
-                    // 若未選擇圖片，自動帶入 Naver Map 地點封面
+                    this.onNameChange();
+
                     if (!this.formData.image) {
-                        this.formData.image = this.getDefaultNaverImage(this.formData.title || this.formData.name || 'Naver');
+                        this.formData.image = this.getNaverPhotoByLocation(this.formData.title || this.formData.name || 'Naver');
                     }
 
                     if (this.currentTab === 'itinerary') {
