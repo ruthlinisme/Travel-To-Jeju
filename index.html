@@ -21,7 +21,7 @@
                 extend: {
                     colors: {
                         jeju: {
-                            bg: '#FDFBF7',       // 延續 Banner 右側溫暖奶油底色
+                            bg: '#FDFBF7',       // 延續 Banner 右側溫暖天空奶油底色
                             ocean: '#3B82F6',    // 濟州海洋藍
                             sky: '#0EA5E9',      // 晴空藍
                             mandarin: '#F97316', // 濟州柑橘橘
@@ -45,7 +45,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* 頁首 Banner 與圓弧銜接 */
+        /* 頁首 Banner 容器：固定高度 250px、圖片滿版與靠 left 對齊 */
         .banner-container {
             position: relative;
             height: 250px;
@@ -81,7 +81,7 @@
 
     <div id="app" class="relative min-h-screen">
 
-        <!-- 頁首 Banner 區塊 (圖片檔名已更改為 IMG_9509) -->
+        <!-- 頁首 Banner 區塊 (使用 IMG_9509) -->
         <div class="banner-container relative">
             <img src="IMG_9509" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
@@ -124,7 +124,7 @@
                     </div>
                 </div>
 
-                <!-- 類別篩選器 -->
+                <!-- 類別篩選器 (含 Emoji) -->
                 <div class="flex items-center justify-between pt-2">
                     <span class="text-sm font-bold text-gray-700">行程明細</span>
                     <select v-model="filterCategory" class="text-xs bg-white border border-gray-300 rounded-lg px-2 py-1 focus:outline-none">
@@ -353,7 +353,7 @@
 
         </div>
 
-        <!-- 右下角浮動 “＋” 按鈕 (資訊頁面不顯示) -->
+        <!-- 右下角浮動 “＋” 按鈕 (資訊頁面時不顯示) -->
         <button v-if="currentTab !== 'info'" @click="openAddModal" class="fixed bottom-6 right-6 w-14 h-14 bg-jeju-mandarin text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-all">
             <i class="fa-solid fa-plus"></i>
         </button>
