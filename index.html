@@ -85,7 +85,7 @@
         <div class="banner-container relative">
             <img src="./assets/jeju-banner.png" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
-            <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 (可橫向微滑動) -->
+            <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 -->
             <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20 max-w-[92vw] overflow-x-auto no-scrollbar space-x-1">
                 <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id"
                         :class="['flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300', currentTab === tab.id ? 'bg-jeju-mandarin text-white shadow-md scale-105' : 'text-gray-600 hover:text-jeju-mandarin']">
@@ -314,7 +314,7 @@
                 </div>
             </div>
 
-            <!-- 4. 景點 Tab (新增，卡片與購物清單樣式一致) -->
+            <!-- 4. 景點 Tab (顯示營業時間與備註) -->
             <div v-if="currentTab === 'spots'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in spotsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
@@ -327,8 +327,14 @@
                                 <p v-if="item.price" class="text-xs font-bold text-jeju-ocean">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '門票 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
+                                <p v-if="item.businessHours" class="text-[10px] text-gray-500">
+                                    <i class="fa-regular fa-clock mr-0.5 text-blue-400"></i>{{ item.businessHours }}
+                                </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
+                                </p>
+                                <p v-if="item.note" class="text-[10px] text-gray-600 bg-gray-50 p-1.5 rounded-lg mt-1 break-words">
+                                    {{ item.note }}
                                 </p>
                             </div>
                         </div>
@@ -345,7 +351,7 @@
                 </div>
             </div>
 
-            <!-- 5. 美食 Tab (新增，卡片與購物清單樣式一致) -->
+            <!-- 5. 美食 Tab (顯示營業時間與備註) -->
             <div v-if="currentTab === 'foods'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in foodsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
@@ -358,8 +364,14 @@
                                 <p v-if="item.price" class="text-xs font-bold text-amber-600">
                                     {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '均消 ₩ ' + Number(item.price).toLocaleString() }}
                                 </p>
+                                <p v-if="item.businessHours" class="text-[10px] text-gray-500">
+                                    <i class="fa-regular fa-clock mr-0.5 text-amber-500"></i>{{ item.businessHours }}
+                                </p>
                                 <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
                                     <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
+                                </p>
+                                <p v-if="item.note" class="text-[10px] text-gray-600 bg-gray-50 p-1.5 rounded-lg mt-1 break-words">
+                                    {{ item.note }}
                                 </p>
                             </div>
                         </div>
@@ -504,15 +516,15 @@
                     </div>
                 </div>
 
-                <!-- 2. 購物清單 / 景點 / 美食 Modal (三者格式一致) -->
-                <div v-if="currentTab === 'shopping' || currentTab === 'spots' || currentTab === 'foods'" class="space-y-3 text-xs">
+                <!-- 2. 購物清單 Modal -->
+                <div v-if="currentTab === 'shopping'" class="space-y-3 text-xs">
                     <div>
-                        <label class="block text-gray-500 mb-1">名稱</label>
-                        <input v-model="formData.name" type="text" :placeholder="currentTab === 'shopping' ? '例如：濟州柑橘塔' : (currentTab === 'spots' ? '例如：月汀里海灘' : '例如：熟成到黑豬肉')" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">商品名稱</label>
+                        <input v-model="formData.name" type="text" placeholder="例如：濟州柑橘塔" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
-                            <label class="block text-gray-500 mb-1">價格 / 預估費用</label>
+                            <label class="block text-gray-500 mb-1">價格</label>
                             <input v-model.number="formData.price" type="number" placeholder="金額" class="w-full border rounded-xl p-2.5 bg-gray-50">
                         </div>
                         <div>
@@ -524,8 +536,8 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">地址 / 店名</label>
-                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">購買地址 / 店名</label>
+                        <input v-model="formData.address" type="text" placeholder="例如：東門市場 或 地址" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">上傳圖片</label>
@@ -533,7 +545,81 @@
                     </div>
                 </div>
 
-                <!-- 3. 花費 Modal -->
+                <!-- 3. 景點 Modal (包含營業時間、備註) -->
+                <div v-if="currentTab === 'spots'" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-gray-500 mb-1">景點名稱</label>
+                        <input v-model="formData.name" type="text" placeholder="例如：月汀里海灘" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-gray-500 mb-1">門票 / 預估費用</label>
+                            <input v-model.number="formData.price" type="number" placeholder="無門票可填0" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 mb-1">幣別</label>
+                            <select v-model="formData.currency" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                                <option value="KRW">KRW (韓元)</option>
+                                <option value="TWD">TWD (台幣)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">開放 / 營業時間</label>
+                        <input v-model="formData.businessHours" type="text" placeholder="例如：09:00 - 18:00 (或 24小時)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">地址 / 地標</label>
+                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">上傳圖片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">特色與備註</label>
+                        <textarea v-model="formData.note" class="w-full border rounded-xl p-2.5 bg-gray-50" rows="2" placeholder="注意事項、打卡點、停車資訊等"></textarea>
+                    </div>
+                </div>
+
+                <!-- 4. 美食 Modal (包含營業時間、備註) -->
+                <div v-if="currentTab === 'foods'" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-gray-500 mb-1">餐廳名稱</label>
+                        <input v-model="formData.name" type="text" placeholder="例如：熟成到 黑豬肉" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-gray-500 mb-1">人均預算</label>
+                            <input v-model.number="formData.price" type="number" placeholder="金額" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 mb-1">幣別</label>
+                            <select v-model="formData.currency" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                                <option value="KRW">KRW (韓元)</option>
+                                <option value="TWD">TWD (台幣)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">營業時間</label>
+                        <input v-model="formData.businessHours" type="text" placeholder="例如：11:30 - 21:00 (Last Order 20:00)" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">餐廳地址</label>
+                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">上傳圖片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">推薦招牌與備註</label>
+                        <textarea v-model="formData.note" class="w-full border rounded-xl p-2.5 bg-gray-50" rows="2" placeholder="必點菜色、排隊技巧、公休日等"></textarea>
+                    </div>
+                </div>
+
+                <!-- 5. 花費 Modal -->
                 <div v-if="currentTab === 'expenses'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">項目名稱</label>
@@ -573,7 +659,7 @@
                     </div>
                 </div>
 
-                <!-- 4. 預支費 Modal -->
+                <!-- 6. 預支費 Modal -->
                 <div v-if="currentTab === 'prepaid'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">項目名稱</label>
@@ -774,7 +860,7 @@
                     if (this.currentTab === 'itinerary') {
                         this.formData = { category: '景點', dayIndex: this.selectedDayIndex };
                     } else if (this.currentTab === 'shopping' || this.currentTab === 'spots' || this.currentTab === 'foods') {
-                        this.formData = { currency: 'KRW', price: null, address: '' };
+                        this.formData = { currency: 'KRW', price: null, address: '', businessHours: '', note: '' };
                     } else if (this.currentTab === 'expenses') {
                         this.formData = { 
                             category: '🍽️飲食', 
