@@ -81,9 +81,9 @@
 
     <div id="app" class="relative min-h-screen">
 
-        <!-- 頁首 Banner 區塊 -->
+        <!-- 頁首 Banner 區塊 (已更新圖片檔名為 IMG_9508) -->
         <div class="banner-container relative">
-            <img src="IMG_9506" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
+            <img src="IMG_9508" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
             <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 -->
             <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20">
@@ -124,7 +124,7 @@
                     </div>
                 </div>
 
-                <!-- 類別篩選器 (已加上 Emoji) -->
+                <!-- 類別篩選器 -->
                 <div class="flex items-center justify-between pt-2">
                     <span class="text-sm font-bold text-gray-700">行程明細</span>
                     <select v-model="filterCategory" class="text-xs bg-white border border-gray-300 rounded-lg px-2 py-1 focus:outline-none">
@@ -420,7 +420,7 @@
                     </div>
                 </div>
 
-                <!-- 操作按鈕 (含刪除確認) -->
+                <!-- 操作按鈕 -->
                 <div class="flex space-x-2 pt-3">
                     <button v-if="isEditing" @click="confirmDelete" class="w-1/3 bg-red-100 text-red-600 font-bold py-3 rounded-xl">刪除</button>
                     <button @click="saveData" class="flex-1 bg-jeju-mandarin text-white font-bold py-3 rounded-xl shadow-md">儲存</button>
@@ -475,7 +475,6 @@
                     isEditing: false,
                     formData: {},
                     
-                    // 預設行程：包含 9/19 去程與 9/25 回程航班資訊
                     itineraries: [
                         {
                             id: 1,
