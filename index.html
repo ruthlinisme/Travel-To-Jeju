@@ -85,10 +85,10 @@
         <div class="banner-container relative">
             <img src="./assets/jeju-banner.png" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
-            <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 -->
-            <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20">
+            <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 (可橫向微滑動) -->
+            <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20 max-w-[92vw] overflow-x-auto no-scrollbar space-x-1">
                 <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id"
-                        :class="['flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300', currentTab === tab.id ? 'bg-jeju-mandarin text-white shadow-md scale-105' : 'text-gray-600 hover:text-jeju-mandarin']">
+                        :class="['flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300', currentTab === tab.id ? 'bg-jeju-mandarin text-white shadow-md scale-105' : 'text-gray-600 hover:text-jeju-mandarin']">
                     <i :class="tab.icon" class="text-base"></i>
                 </button>
             </div>
@@ -314,7 +314,69 @@
                 </div>
             </div>
 
-            <!-- 4. 花費 Tab -->
+            <!-- 4. 景點 Tab (新增，卡片與購物清單樣式一致) -->
+            <div v-if="currentTab === 'spots'" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div v-for="(item, idx) in spotsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
+                        <div>
+                            <div class="h-32 bg-gray-100 relative">
+                                <img :src="item.image || 'https://via.placeholder.com/150'" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 space-y-1">
+                                <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
+                                <p v-if="item.price" class="text-xs font-bold text-jeju-ocean">
+                                    {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '門票 ₩ ' + Number(item.price).toLocaleString() }}
+                                </p>
+                                <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
+                                    <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
+                                </p>
+                            </div>
+                        </div>
+                        <div v-if="item.address" class="p-2 pt-0">
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address)" target="_blank" 
+                               class="block text-center bg-emerald-50 text-emerald-600 rounded-lg py-1 text-[10px] font-bold">
+                                Naver Map 導航
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="spotsList.length === 0" class="text-center py-12 text-gray-400 text-sm">
+                    景點清單為空，點擊右下角「＋」新增想去打卡的私房景點！
+                </div>
+            </div>
+
+            <!-- 5. 美食 Tab (新增，卡片與購物清單樣式一致) -->
+            <div v-if="currentTab === 'foods'" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div v-for="(item, idx) in foodsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
+                        <div>
+                            <div class="h-32 bg-gray-100 relative">
+                                <img :src="item.image || 'https://via.placeholder.com/150'" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 space-y-1">
+                                <h4 class="font-bold text-xs text-gray-800">{{ item.name }}</h4>
+                                <p v-if="item.price" class="text-xs font-bold text-amber-600">
+                                    {{ item.currency === 'TWD' ? 'NT$ ' + item.price : '均消 ₩ ' + Number(item.price).toLocaleString() }}
+                                </p>
+                                <p v-if="item.address" class="text-[10px] text-gray-500 truncate">
+                                    <i class="fa-solid fa-location-dot mr-0.5 text-red-400"></i>{{ item.address }}
+                                </p>
+                            </div>
+                        </div>
+                        <div v-if="item.address" class="p-2 pt-0">
+                            <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address)" target="_blank" 
+                               class="block text-center bg-emerald-50 text-emerald-600 rounded-lg py-1 text-[10px] font-bold">
+                                Naver Map 導航
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="foodsList.length === 0" class="text-center py-12 text-gray-400 text-sm">
+                    美食口袋名單為空，點擊右下角「＋」新增濟州島必吃美食！
+                </div>
+            </div>
+
+            <!-- 6. 花費 Tab -->
             <div v-if="currentTab === 'expenses'" class="space-y-4">
                 <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-2xl shadow-md text-center">
                     <div class="text-xs opacity-80">個人總花費 (估算 KRW)</div>
@@ -345,7 +407,7 @@
                 </div>
             </div>
 
-            <!-- 5. 預支費 (分攤) Tab -->
+            <!-- 7. 預支費 (分攤) Tab -->
             <div v-if="currentTab === 'prepaid'" class="space-y-4">
                 <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 rounded-2xl shadow-md">
                     <h3 class="text-xs opacity-90 text-center mb-2">四人平攤結算概況</h3>
@@ -389,7 +451,7 @@
 
         </div>
 
-        <!-- 右下角浮動 “＋” 按鈕 -->
+        <!-- 右下角浮動 “＋” 按鈕 (資訊頁面不顯示) -->
         <button v-if="currentTab !== 'info'" @click="openAddModal" class="fixed bottom-6 right-6 w-14 h-14 bg-jeju-mandarin text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-all">
             <i class="fa-solid fa-plus"></i>
         </button>
@@ -402,7 +464,7 @@
                     <button @click="showModal = false" class="text-gray-400"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
 
-                <!-- 1. 行程 Modal (標題已由「分類」改為「類別」) -->
+                <!-- 1. 行程 Modal -->
                 <div v-if="currentTab === 'itinerary'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">類別</label>
@@ -442,15 +504,15 @@
                     </div>
                 </div>
 
-                <!-- 2. 購物清單 Modal -->
-                <div v-if="currentTab === 'shopping'" class="space-y-3 text-xs">
+                <!-- 2. 購物清單 / 景點 / 美食 Modal (三者格式一致) -->
+                <div v-if="currentTab === 'shopping' || currentTab === 'spots' || currentTab === 'foods'" class="space-y-3 text-xs">
                     <div>
-                        <label class="block text-gray-500 mb-1">商品名稱</label>
-                        <input v-model="formData.name" type="text" placeholder="例如：濟州柑橘塔" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">名稱</label>
+                        <input v-model="formData.name" type="text" :placeholder="currentTab === 'shopping' ? '例如：濟州柑橘塔' : (currentTab === 'spots' ? '例如：月汀里海灘' : '例如：熟成到黑豬肉')" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
-                            <label class="block text-gray-500 mb-1">價格</label>
+                            <label class="block text-gray-500 mb-1">價格 / 預估費用</label>
                             <input v-model.number="formData.price" type="number" placeholder="金額" class="w-full border rounded-xl p-2.5 bg-gray-50">
                         </div>
                         <div>
@@ -462,8 +524,8 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-500 mb-1">購買地址 / 店名</label>
-                        <input v-model="formData.address" type="text" placeholder="例如：東門市場 或 地址" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                        <label class="block text-gray-500 mb-1">地址 / 店名</label>
+                        <input v-model="formData.address" type="text" placeholder="例如：韓文地址或搜尋關鍵字" class="w-full border rounded-xl p-2.5 bg-gray-50">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">上傳圖片</label>
@@ -471,7 +533,7 @@
                     </div>
                 </div>
 
-                <!-- 3. 花費 Modal (飲食改成 🍽️ 飲食) -->
+                <!-- 3. 花費 Modal -->
                 <div v-if="currentTab === 'expenses'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">項目名稱</label>
@@ -585,6 +647,8 @@
                         { id: 'itinerary', icon: 'fa-solid fa-map-location-dot' },
                         { id: 'info', icon: 'fa-solid fa-circle-info' },
                         { id: 'shopping', icon: 'fa-solid fa-basket-shopping' },
+                        { id: 'spots', icon: 'fa-solid fa-water' },      // 海洋 Icon (景點)
+                        { id: 'foods', icon: 'fa-solid fa-utensils' },   // 餐盤刀叉 Icon (美食)
                         { id: 'expenses', icon: 'fa-solid fa-money-bill-wave' },
                         { id: 'prepaid', icon: 'fa-solid fa-coins' }
                     ],
@@ -603,7 +667,6 @@
                         '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'
                     ],
                     members: ['陳', '林', '鄧', '吳'],
-                    // 個人花費與預支費之類別選單 (飲食改為 🍽️ 飲食)
                     expenseCategories: ['🚗交通', '🍽️飲食', '🏕️住宿', '🎫門票', '🛍️購物', '🎲其他'],
                     weather: {
                         icon: 'fa-solid fa-sun text-yellow-300',
@@ -613,7 +676,6 @@
                         rainProb: 10
                     },
                     filterCategory: '全部',
-                    // 每日行程類別選單 (購物改為 🛍️ 購物)
                     categories: [
                         { name: '景點', label: '🏝️ 景點' },
                         { name: '住宿', label: '🏕️ 住宿' },
@@ -654,6 +716,8 @@
                         }
                     ],
                     shoppingList: [],
+                    spotsList: [],
+                    foodsList: [],
                     expenses: [],
                     prepaidList: []
                 }
@@ -709,7 +773,7 @@
 
                     if (this.currentTab === 'itinerary') {
                         this.formData = { category: '景點', dayIndex: this.selectedDayIndex };
-                    } else if (this.currentTab === 'shopping') {
+                    } else if (this.currentTab === 'shopping' || this.currentTab === 'spots' || this.currentTab === 'foods') {
                         this.formData = { currency: 'KRW', price: null, address: '' };
                     } else if (this.currentTab === 'expenses') {
                         this.formData = { 
@@ -747,6 +811,10 @@
                         }
                     } else if (this.currentTab === 'shopping') {
                         this.shoppingList.push({ ...this.formData });
+                    } else if (this.currentTab === 'spots') {
+                        this.spotsList.push({ ...this.formData });
+                    } else if (this.currentTab === 'foods') {
+                        this.foodsList.push({ ...this.formData });
                     } else if (this.currentTab === 'expenses') {
                         this.expenses.push({ ...this.formData });
                     } else if (this.currentTab === 'prepaid') {
