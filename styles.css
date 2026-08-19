@@ -1,0 +1,593 @@
+
+:root{
+  --sky:#bce7f4; --sky2:#eaf8fb; --sea:#4fb7d7; --deep:#2388ad;
+  --sand:#fff8ea; --foam:#fbfefd; --leaf:#78a987; --stone:#66737b;
+  --yellow:#f5d653; --orange:#f2a15c; --ink:#263842; --muted:#7b919b;
+  --shadow:0 12px 30px rgba(45,93,108,.10);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;color:var(--ink);
+  background:
+    radial-gradient(circle at 8% 7%,rgba(255,255,255,.92),transparent 18%),
+    radial-gradient(circle at 95% 22%,rgba(92,191,221,.22),transparent 26%),
+    linear-gradient(180deg,var(--sky) 0%,var(--sky2) 30%,#f7fbf8 68%,var(--sand) 100%);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang TC","Noto Sans TC",sans-serif;
+}
+[v-cloak]{display:none}
+button,input,select,textarea{font:inherit}
+button{-webkit-tap-highlight-color:transparent}
+.app{width:min(100%,1120px);min-height:100vh;margin:0 auto;position:relative}
+.hero{
+  height:250px;position:relative;overflow:hidden;border-radius:0 0 38px 38px;
+  box-shadow:0 18px 46px rgba(36,94,115,.18)
+}
+.hero img{width:100%;height:100%;display:block;object-fit:contain;object-position:center center;background:#bce7f4}
+.hero:after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(17,61,76,.02) 0%,rgba(17,61,76,0) 48%,rgba(17,61,76,.20) 100%)
+}
+.heroTitle{
+  position:absolute;z-index:3;left:20px;top:18px;color:#fff;
+  text-shadow:0 2px 12px rgba(5,49,65,.35)
+}
+.heroTitle small{font-weight:900;letter-spacing:.16em;font-size:10px}
+.heroTitle h1{margin:4px 0 0;font-size:25px;line-height:1.08;font-weight:950}
+.tabs{
+  position:absolute;z-index:6;right:14px;bottom:14px;top:auto;
+  display:flex;flex-direction:column;gap:8px;
+  width:108px;height:54px;overflow-y:auto;overflow-x:hidden;
+  padding:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:y mandatory;
+  overscroll-behavior:contain
+}
+.tabs::-webkit-scrollbar,.dateStrip::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 46px;width:100%;height:46px;border:0;border-radius:16px;color:#466470;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);
+  box-shadow:0 8px 22px rgba(19,77,99,.17);
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;
+  padding:0 10px;text-align:left;scroll-snap-align:start
+}
+.tab.active{background:#fff;color:#087da8;transform:none;box-shadow:0 10px 24px rgba(17,99,132,.24)}
+.tab .ico{font-size:20px;line-height:1;flex:0 0 auto}
+.tab small{display:block;font-size:11px;font-weight:900;margin-top:0;white-space:nowrap}
+.main{
+  position:relative;z-index:4;margin-top:0;border-radius:32px 32px 0 0;
+  min-height:calc(100vh - 226px);padding:30px 16px 112px;background:rgba(251,254,253,.97);
+  box-shadow:0 -8px 28px rgba(48,94,107,.08)
+}
+.main:before{
+  content:"";position:absolute;right:14px;top:8px;width:62px;height:34px;opacity:.18;pointer-events:none;
+  background:
+    radial-gradient(circle at 10px 10px,var(--yellow) 0 4px,transparent 5px),
+    radial-gradient(circle at 35px 20px,var(--sea) 0 3px,transparent 4px)
+}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.head h2{margin:0;font-size:25px;font-weight:950;letter-spacing:-.03em}
+.head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.badge{padding:7px 10px;border-radius:999px;background:#eef8fb;color:#2c819f;font-size:12px;font-weight:900}
+.dateStrip{display:flex;gap:10px;overflow-x:auto;padding:4px 1px 13px;scroll-snap-type:x proximity}
+.dateBtn{
+  flex:0 0 74px;min-height:84px;border:0;border-radius:22px;background:#fff;color:#718793;
+  box-shadow:0 8px 22px rgba(64,104,117,.09);padding:9px 6px;scroll-snap-align:start
+}
+.dateBtn .dow{font-size:18px;font-weight:950}.dateBtn .day{font-size:29px;font-weight:950;line-height:1.05}
+.dateBtn .mon{font-size:10px;font-weight:900;margin-top:4px}
+.dateBtn.active{color:#fff;background:linear-gradient(145deg,#51bcdd,#218db6);box-shadow:0 13px 28px rgba(31,141,183,.29)}
+.weather{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;margin:1px 0 14px;padding:15px 16px;
+  border-radius:24px;background:linear-gradient(135deg,#eaf9ff,#fff8e8);border:1px solid rgba(74,159,190,.12)
+}
+.weather .icon{font-size:35px}.weather .temp{font-size:27px;font-weight:950}
+.muted{color:var(--muted);font-size:12px}
+.stack{display:grid;gap:12px}
+.card{
+  position:relative;background:rgba(255,255,255,.98);border:1px solid rgba(82,123,136,.11);
+  border-radius:24px;padding:16px;box-shadow:var(--shadow);overflow:hidden
+}
+.card:after{
+  content:"";position:absolute;right:-18px;top:-19px;width:68px;height:68px;border-radius:50%;
+  border:12px solid rgba(80,183,215,.055);pointer-events:none
+}
+.card.hotel{background:linear-gradient(135deg,#fffaf0,#f8fff6)}
+.card.flight{background:linear-gradient(135deg,#edf9ff,#fff);border-color:#cce7f3}
+.card.flight:before{
+  content:"✈";position:absolute;right:10px;bottom:-17px;font-size:92px;opacity:.07;transform:rotate(-9deg)
+}
+.cardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:#f1f6f7;font-size:12px;font-weight:900}
+.card h3{margin:7px 0 4px;font-size:18px}.card p{margin:5px 0;line-height:1.45}
+.time{font-size:17px;font-weight:950;color:#258aae;white-space:nowrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mini{border:0;border-radius:14px;padding:8px 11px;background:#edf7fa;color:#287c9b;font-size:12px;font-weight:900}
+.mini.danger{background:#fff0ef;color:#ba4e49}
+.transport{
+  display:flex;align-items:center;justify-content:center;gap:8px;color:#718992;font-size:12px
+}
+.transport:before,.transport:after{content:"";height:1px;background:#dce8eb;flex:1}
+.transport select{border:0;background:transparent;color:#4d7887;font-weight:900;max-width:142px}
+.sourceBox{
+  display:flex;align-items:center;gap:8px;margin:0 0 7px;color:#7d929b;font-size:11px
+}
+.flightRoute{display:flex;align-items:center;gap:10px;margin-top:10px}
+.airport{flex:1;text-align:center}.airport b{display:block;font-size:27px}.airport small{color:var(--muted)}
+.line{height:2px;background:#b7dbe8;flex:1;position:relative}.line:after{content:"✈";position:absolute;left:50%;top:50%;transform:translate(-50%,-55%);background:#f4fbff;padding:0 5px}
+.infoRow{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px dashed #e1eaed}
+.infoRow:last-child{border-bottom:0}.infoRow span:first-child{color:#81939b;font-size:12px}.infoRow strong{text-align:right}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+.total{background:linear-gradient(135deg,#2c9dc6,#257da8);color:white}
+.total .num{font-size:31px;font-weight:950}
+.thumbRow{display:grid;grid-template-columns:76px 1fr;gap:12px;align-items:center}
+.thumb{width:76px;height:76px;border-radius:18px;background:#edf4f5;display:grid;place-items:center;font-size:28px;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.fab{
+  position:fixed;right:max(20px,calc((100vw - 1120px)/2 + 20px));bottom:24px;z-index:40;
+  width:59px;height:59px;border:0;border-radius:50%;background:linear-gradient(145deg,#2ba0ca,#167ba4);
+  color:#fff;font-size:33px;box-shadow:0 14px 31px rgba(25,122,160,.34)
+}
+.input,.select,.textarea{
+  width:100%;border:1px solid #dbe7ea;background:#fbfefe;border-radius:15px;padding:11px 12px;outline:none
+}
+.input:focus,.select:focus,.textarea:focus{border-color:#6fc1dd;box-shadow:0 0 0 3px rgba(111,193,221,.13)}
+.textarea{min-height:90px;resize:vertical}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:900;color:#657e89}
+.primary,.secondary{border:0;border-radius:15px;padding:11px 14px;font-weight:950}
+.primary{background:#248eb6;color:#fff}.secondary{background:#edf6f8;color:#3d788e}.dangerBtn{background:#fff0ef;color:#ba4f49}
+.formGrid{display:grid;grid-template-columns:1fr;gap:11px}
+.modalWrap{position:fixed;inset:0;z-index:90;background:rgba(18,42,51,.39);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center}
+.modal{width:min(100%,760px);max-height:89vh;overflow:auto;background:#fff;border-radius:28px 28px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(15,51,64,.24)}
+.handle{width:46px;height:5px;border-radius:99px;background:#d5e0e3;margin:0 auto 14px}
+.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.modalHead h3{margin:0;font-size:20px}
+.close{width:36px;height:36px;border:0;border-radius:12px;background:#eef4f6}
+.checks{display:flex;gap:8px;flex-wrap:wrap}.check{display:flex;align-items:center;gap:6px;padding:9px 10px;border-radius:13px;background:#f2f7f8;font-size:13px}
+.empty{text-align:center;padding:38px 14px;color:#82979f}
+.toast{position:fixed;z-index:130;left:50%;bottom:96px;transform:translateX(-50%);background:#203a44;color:white;padding:10px 14px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.note{padding:10px 12px;border-radius:14px;background:#fff9e8;color:#8a6b22;font-size:12px;line-height:1.45}
+@media(min-width:720px){
+  .main{padding:31px 28px 120px}.grid2{grid-template-columns:repeat(2,1fr)}
+  .formGrid{grid-template-columns:repeat(2,1fr)}.span2{grid-column:span 2}
+  .heroTitle{left:34px;top:23px}.tabs{right:22px;bottom:16px;top:auto}
+}
+
+/* v8 多人共同編輯 */
+.authScreen{
+  position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(circle at 20% 12%,rgba(255,255,255,.9),transparent 24%),
+  linear-gradient(180deg,#bce7f4,#edf9fb 56%,#fff8ea)
+}
+.authCard{
+  width:min(100%,420px);background:rgba(255,255,255,.93);backdrop-filter:blur(18px);
+  border:1px solid rgba(80,150,173,.14);border-radius:30px;padding:26px 22px;
+  box-shadow:0 24px 60px rgba(33,87,106,.18)
+}
+.authLogo{font-size:46px}.authCard h2{font-size:28px;margin:8px 0 3px}.authCard>p{margin:0 0 18px;color:#728b96}
+.authCard .field{margin-top:11px}.authPrimary{width:100%;margin-top:15px}
+.authError{margin-top:11px;padding:10px 12px;border-radius:14px;background:#fff0ef;color:#b44d49;font-size:12px}
+.authHint{margin-top:14px;color:#7a9099;font-size:11px;line-height:1.55}
+.userChip{
+  position:absolute;z-index:7;left:20px;bottom:14px;display:flex;align-items:center;gap:8px;
+  padding:6px 7px 6px 10px;border-radius:999px;background:rgba(255,255,255,.88);
+  backdrop-filter:blur(14px);box-shadow:0 8px 22px rgba(19,77,99,.12);
+  color:#426270;font-size:11px;font-weight:900
+}
+.userChip button{border:0;border-radius:999px;background:#edf7fa;color:#267d9d;padding:5px 8px;font-size:10px;font-weight:900}
+@media(min-width:720px){.userChip{left:34px;bottom:16px}}
+
+
+/* v11 交通距離 / 時間可編輯 */
+.transportEdit{
+  gap:7px;
+  flex-wrap:wrap;
+}
+.transportEdit::before,
+.transportEdit::after{
+  min-width:18px;
+}
+.transportField{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 7px;
+  border:1px solid #dce8eb;
+  border-radius:12px;
+  background:#fff;
+  color:#527481;
+  font-weight:900;
+}
+.transportField input{
+  width:48px;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#315d6d;
+  text-align:right;
+  padding:0;
+}
+.transportField span{
+  font-size:11px;
+  color:#718992;
+  white-space:nowrap;
+}
+
+/* v12 帳號位置 */
+.userChip{
+  left:auto !important;
+  right:16px !important;
+  top:14px !important;
+  bottom:auto !important;
+}
+@media(min-width:720px){
+  .userChip{
+    left:auto !important;
+    right:22px !important;
+    top:18px !important;
+    bottom:auto !important;
+  }
+}
+
+/* v12 NAVER 圈圈 N */
+.naverBtn,.naverPrimary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.naverN{
+  width:19px;
+  height:19px;
+  border-radius:50%;
+  display:inline-grid;
+  place-items:center;
+  background:#19b965;
+  color:#fff;
+  font-size:11px;
+  font-weight:950;
+  line-height:1;
+  flex:0 0 auto;
+}
+
+/* v12 行程卡左側照片 */
+.itineraryWithPhoto{
+  display:grid;
+  grid-template-columns:92px minmax(0,1fr);
+  gap:13px;
+  align-items:stretch;
+}
+.itineraryPhoto{
+  width:92px;
+  min-height:112px;
+  border-radius:18px;
+  overflow:hidden;
+  background:linear-gradient(145deg,#eef8fb,#fff8ea);
+  display:grid;
+  place-items:center;
+  font-size:30px;
+}
+.itineraryPhoto img{
+  width:100%;
+  height:100%;
+  min-height:112px;
+  object-fit:cover;
+  display:block;
+}
+.itineraryBody{min-width:0}
+@media(max-width:420px){
+  .itineraryWithPhoto{
+    grid-template-columns:78px minmax(0,1fr);
+    gap:10px;
+  }
+  .itineraryPhoto{
+    width:78px;
+    min-height:104px;
+  }
+  .itineraryPhoto img{min-height:104px}
+}
+
+
+/* v14 備註顯示 */
+.cardNote{
+  margin-top:6px;
+  padding:9px 11px;
+  border-radius:14px;
+  background:rgba(255,248,232,.9);
+  color:#6f5a2a;
+  font-size:12px;
+  line-height:1.5;
+}
+
+/* v14 行程卡封面背景 + 玻璃感 */
+.itineraryCard{
+  min-height:190px;
+  padding:0;
+  background:linear-gradient(135deg,#eef9fd,#fffaf0);
+  border:1px solid rgba(82,123,136,.11);
+}
+.itineraryCard.hasCover{
+  background:transparent;
+}
+.itineraryCard .itineraryCover{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+}
+.itineraryCard .itineraryCover::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg,rgba(21,41,48,.10),rgba(21,41,48,.28) 48%,rgba(255,255,255,.18) 100%);
+}
+.itineraryCard .fallbackCover{
+  display:grid;
+  place-items:center;
+  font-size:40px;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(255,255,255,.9),transparent 24%),
+    linear-gradient(145deg,#e9f8fc,#fff8eb);
+}
+.itineraryCard .itineraryBody{
+  position:relative;
+  z-index:2;
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:14px;
+}
+.itineraryCard .glassBody{
+  margin:12px;
+  min-height:calc(190px - 24px);
+  border-radius:22px;
+  background:rgba(255,255,255,.28);
+  border:1px solid rgba(255,255,255,.36);
+  box-shadow:0 10px 28px rgba(8,38,49,.16);
+  backdrop-filter:blur(14px) saturate(115%);
+  -webkit-backdrop-filter:blur(14px) saturate(115%);
+}
+.itineraryCard.hasCover .chip{
+  background:rgba(255,255,255,.78);
+}
+.itineraryCard.hasCover .time,
+.itineraryCard.hasCover h3,
+.itineraryCard.hasCover p,
+.itineraryCard.hasCover b{
+  color:#fff;
+}
+.itineraryCard.hasCover .muted{
+  color:rgba(255,255,255,.88);
+}
+.itineraryCard.hasCover .cardNote{
+  background:rgba(255,255,255,.22);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.22);
+}
+.itineraryCard.hasCover .mini{
+  background:rgba(255,255,255,.84);
+  color:#236b86;
+}
+.itineraryCard.hasCover .flightRoute .line{
+  background:rgba(255,255,255,.56);
+}
+.itineraryCard.hasCover .flightRoute .line:after{
+  background:rgba(255,255,255,.2);
+  color:#fff;
+}
+.itineraryCard.hasCover .airport small{
+  color:rgba(255,255,255,.88);
+}
+@media(max-width:480px){
+  .itineraryCard{min-height:174px}
+  .itineraryCard .itineraryBody{min-height:174px}
+  .itineraryCard .glassBody{min-height:calc(174px - 24px)}
+}
+
+
+/* v14 覆蓋舊版左側縮圖排版 */
+.itineraryWithPhoto,
+.itineraryPhoto{
+  display:initial;
+  width:auto;
+  min-height:0;
+}
+
+/* v15：移除行程卡玻璃感 */
+.itineraryCard .glassBody,
+.itineraryCard.hasCover .itineraryBody{
+  margin:0 !important;
+  min-height:190px;
+  border-radius:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* 照片卡改用單純深色漸層確保文字可讀 */
+.itineraryCard.hasCover .itineraryCover::after{
+  background:
+    linear-gradient(180deg,
+      rgba(12,28,35,.18) 0%,
+      rgba(12,28,35,.38) 52%,
+      rgba(12,28,35,.58) 100%);
+}
+
+/* 航班維持原本乾淨卡片樣式，不使用任何封面背景 */
+.itineraryCard.flight{
+  min-height:auto;
+  padding:16px;
+  background:linear-gradient(135deg,#edf9ff,#fff);
+}
+.itineraryCard.flight .itineraryBody{
+  min-height:auto;
+  padding:0;
+}
+.itineraryCard.flight .itineraryCover{
+  display:none !important;
+}
+.itineraryCard.flight h3,
+.itineraryCard.flight p,
+.itineraryCard.flight b{
+  color:inherit;
+}
+.itineraryCard.flight .muted{
+  color:var(--muted);
+}
+.itineraryCard.flight .time{
+  color:#258aae;
+}
+.itineraryCard.flight .chip{
+  background:#f1f6f7;
+}
+.itineraryCard.flight .airport small{
+  color:var(--muted);
+}
+.itineraryCard.flight .flightRoute .line{
+  background:#b7dbe8;
+}
+.itineraryCard.flight .flightRoute .line:after{
+  background:#f4fbff;
+  color:inherit;
+}
+
+
+/* v16 PWA / 通知 */
+.pwaTools{
+  position:absolute;
+  left:16px;
+  top:16px;
+  z-index:8;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  max-width:58%;
+}
+.heroToolBtn{
+  border:0;
+  border-radius:999px;
+  padding:8px 12px;
+  background:rgba(255,255,255,.9);
+  backdrop-filter:blur(10px);
+  box-shadow:0 10px 22px rgba(20,73,93,.14);
+  color:#265d73;
+  font-size:12px;
+  font-weight:900;
+}
+.infoUtilityCard{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  margin-bottom:16px;
+  padding:16px;
+  border-radius:22px;
+  background:linear-gradient(135deg,#eefafe,#fff);
+  border:1px solid rgba(121,170,189,.18);
+  box-shadow:0 14px 34px rgba(28,87,109,.08);
+}
+.infoUtilityCard b{
+  display:block;
+  margin-bottom:4px;
+  color:#24495b;
+}
+.infoUtilityActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+@media(max-width:720px){
+  .pwaTools{
+    top:14px;
+    left:14px;
+    max-width:52%;
+  }
+  .heroToolBtn{
+    font-size:11px;
+    padding:7px 10px;
+  }
+  .infoUtilityCard{
+    flex-direction:column;
+  }
+  .infoUtilityActions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
+
+/* v17：航班照片封面 + 圖片更透明 */
+.itineraryCard.hasCover .itineraryCover::after{
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,.22) 0%,
+      rgba(255,255,255,.10) 28%,
+      rgba(12,28,35,.26) 56%,
+      rgba(12,28,35,.42) 100%) !important;
+}
+
+/* 航班卡如果有上傳照片，就改成封面背景卡模式 */
+.itineraryCard.flight.hasCover{
+  min-height:190px;
+  padding:0;
+  background:transparent;
+}
+.itineraryCard.flight.hasCover .itineraryCover{
+  display:block !important;
+}
+.itineraryCard.flight.hasCover .itineraryBody{
+  min-height:190px;
+  padding:14px;
+}
+.itineraryCard.flight.hasCover h3,
+.itineraryCard.flight.hasCover p,
+.itineraryCard.flight.hasCover b,
+.itineraryCard.flight.hasCover .time{
+  color:#fff;
+}
+.itineraryCard.flight.hasCover .muted,
+.itineraryCard.flight.hasCover .airport small{
+  color:rgba(255,255,255,.9);
+}
+.itineraryCard.flight.hasCover .chip{
+  background:rgba(255,255,255,.82);
+}
+.itineraryCard.flight.hasCover .flightRoute .line{
+  background:rgba(255,255,255,.58);
+}
+.itineraryCard.flight.hasCover .flightRoute .line:after{
+  background:rgba(255,255,255,.18);
+  color:#fff;
+}
+.itineraryCard.flight.hasCover .mini{
+  background:rgba(255,255,255,.88);
+  color:#236b86;
+}
+
+/* v18：PWA 按鈕移到每日行程上方 */
+.itineraryPwaBar{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin:0 0 12px;
+}
+.itineraryPwaBar .pwaAction{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:9px 13px;
+  border-radius:999px;
+  font-size:12px;
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .itineraryPwaBar{
+    justify-content:flex-start;
+  }
+}
