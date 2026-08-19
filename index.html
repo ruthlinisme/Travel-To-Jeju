@@ -81,9 +81,9 @@
 
     <div id="app" class="relative min-h-screen">
 
-        <!-- 頁首 Banner 區塊 -->
+        <!-- 頁首 Banner 區塊 (圖片檔名已更改為 IMG_9509) -->
         <div class="banner-container relative">
-            <img src="IMG_9508" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
+            <img src="IMG_9509" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
             <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 -->
             <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20">
@@ -353,7 +353,7 @@
 
         </div>
 
-        <!-- 右下角浮動 “＋” 按鈕 (當前 Tab 為 info 資訊頁時會自動隱藏) -->
+        <!-- 右下角浮動 “＋” 按鈕 (資訊頁面不顯示) -->
         <button v-if="currentTab !== 'info'" @click="openAddModal" class="fixed bottom-6 right-6 w-14 h-14 bg-jeju-mandarin text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-all">
             <i class="fa-solid fa-plus"></i>
         </button>
