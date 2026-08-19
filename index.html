@@ -83,7 +83,7 @@
 
         <!-- 頁首 Banner 區塊 -->
         <div class="banner-container relative">
-            <img src="./jeju-banner.png" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
+            <img src="./assets/jeju-banner.png" alt="Jeju Travel Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1548115184-bc6544d06a58?auto=format&fit=crop&w=1920&q=80'">
             
             <!-- 浮動在 Banner 右下方的 Tab 功能按鈕選單 -->
             <div class="absolute bottom-10 right-3 flex bg-white/80 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/50 z-20 max-w-[92vw] overflow-x-auto no-scrollbar space-x-1">
@@ -164,10 +164,17 @@
                             </div>
                         </div>
 
-                        <!-- 一般行程卡片 -->
-                        <div v-else class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-start space-x-3 cursor-grab active:cursor-grabbing">
-                            <div v-if="item.image" class="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
+                        <!-- 一般行程卡片 (左側顯示 Naver Map 封面截圖/照片) -->
+                        <div v-else class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-start space-x-3 cursor-grab active:cursor-grabbing">
+                            <!-- Naver Map 封面截圖圖片區塊 -->
+                            <div v-if="item.image" class="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-100 relative group">
                                 <img :src="item.image" class="w-full h-full object-cover">
+                                <span class="absolute bottom-0 inset-x-0 bg-black/50 text-[9px] text-white text-center py-0.5 font-sans">NaverMap</span>
+                            </div>
+                            <!-- 無圖片時的 Naver Map 預設圖標封面 -->
+                            <div v-else class="w-20 h-20 flex-shrink-0 rounded-xl bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center text-emerald-600">
+                                <i class="fa-solid fa-map-location-dot text-2xl mb-1"></i>
+                                <span class="text-[9px] font-bold">Naver Map</span>
                             </div>
 
                             <div class="space-y-1 flex-1 min-w-0">
@@ -184,7 +191,7 @@
 
                             <div class="flex flex-col items-end space-y-2 flex-shrink-0">
                                 <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(item.address || item.title)" target="_blank" 
-                                   class="bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs flex items-center shadow-sm hover:bg-emerald-600">
+                                   class="bg-emerald-500 text-white px-2.5 py-1.5 rounded-xl text-xs flex items-center shadow-sm hover:bg-emerald-600">
                                     <i class="fa-solid fa-location-arrow mr-1"></i>導航
                                 </a>
                                 <button @click="editItinerary(item)" class="text-gray-400 hover:text-gray-600 text-xs">
@@ -314,7 +321,7 @@
                 </div>
             </div>
 
-            <!-- 4. 景點 Tab (顯示營業時間與備註) -->
+            <!-- 4. 景點 Tab -->
             <div v-if="currentTab === 'spots'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in spotsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
@@ -351,7 +358,7 @@
                 </div>
             </div>
 
-            <!-- 5. 美食 Tab (顯示營業時間與備註) -->
+            <!-- 5. 美食 Tab -->
             <div v-if="currentTab === 'foods'" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div v-for="(item, idx) in foodsList" :key="idx" class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col justify-between">
@@ -476,7 +483,7 @@
                     <button @click="showModal = false" class="text-gray-400"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
 
-                <!-- 1. 行程 Modal -->
+                <!-- 1. 行程 Modal (包含 Naver Map 封面圖片上傳) -->
                 <div v-if="currentTab === 'itinerary'" class="space-y-3 text-xs">
                     <div>
                         <label class="block text-gray-500 mb-1">類別</label>
@@ -487,6 +494,10 @@
                     <div>
                         <label class="block text-gray-500 mb-1">名稱</label>
                         <input v-model="formData.title" type="text" placeholder="例如：城山日出峰" class="w-full border rounded-xl p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 mb-1">Naver Map 封面 / 地圖截圖照片</label>
+                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500 bg-gray-50 p-2 rounded-xl border">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">地址 (韓文/中文地址，方便 Naver Map 導航)</label>
@@ -505,10 +516,6 @@
                     <div>
                         <label class="block text-gray-500 mb-1">門票費用</label>
                         <input v-model="formData.ticket" type="text" placeholder="例如：成人 5,000 KRW" class="w-full border rounded-xl p-2.5 bg-gray-50">
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 mb-1">景點/行程照片</label>
-                        <input type="file" @change="handleImageUpload" class="w-full text-xs text-gray-500">
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">特色與備註</label>
@@ -858,7 +865,7 @@
                     const todayStr = this.getTodayDateString();
 
                     if (this.currentTab === 'itinerary') {
-                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex };
+                        this.formData = { category: '景點', dayIndex: this.selectedDayIndex, businessHours: '', note: '' };
                     } else if (this.currentTab === 'shopping' || this.currentTab === 'spots' || this.currentTab === 'foods') {
                         this.formData = { currency: 'KRW', price: null, address: '', businessHours: '', note: '' };
                     } else if (this.currentTab === 'expenses') {
