@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#bce7f4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Jeju Girls Trip">
+  <link rel="manifest" href="./manifest.webmanifest?v=v16l">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
+  <title>Jeju Road Trip</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="./styles.css?v=v16l">
+</head>
+<body>
+<div id="app" v-cloak class="app">
+  <div class="pullRefresh" :class="{show:pullRefresh.active,ready:pullRefresh.ready}">
+    <div class="pullRefreshIcon">{{pullRefresh.ready?'↻':'↓'}}</div>
+    <span>{{pullRefresh.ready?'放開即可更新':'下拉更新'}}</span>
+  </div>
+
+  <div v-if="auth.loading" class="authScreen">
+    <div class="authCard"><div class="authLogo">🏝️</div><h2>Jeju Girls Trip</h2><p>正在連線共同旅程…</p></div>
+  </div>
+
+  <div v-else-if="!auth.user" class="authScreen">
+    <div class="authCard">
+      <div class="authLogo">🏝️</div>
+      <h2>Jeju Girls Trip</h2>
+      <p>四人共同編輯版</p>
+      <div class="field"><label>Email</label><input class="input" type="email" autocomplete="email" v-model.trim="auth.email" placeholder="name@example.com"></div>
+      <div class="field"><label>密碼</label><input class="input" type="password" autocomplete="current-password" v-model="auth.password" @keyup.enter="signIn"></div>
+      <button class="primary authPrimary" @click="signIn" :disabled="auth.signing">{{auth.signing?'登入中…':'登入'}}</button>
+      <div v-if="auth.error" class="authError">{{auth.error}}</div>
+      <div class="authHint">請使用你們四人的 Supabase 帳號登入。購物清單與個人花費只留在自己的裝置，其餘資料會同步。</div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <img src="./Jeju-banner.png" alt="Jeju road trip banner">
+    <div class="heroTitle">
+      <small>JEJU ROAD TRIP · 2026</small>
+      <h1>濟州海島自駕日記</h1>
+    </div>
+    <div v-if="auth.user" class="userChip">
+      <span>👤 {{displayUser}}</span>
+      <button @click="signOut">登出</button>
+    </div>
+    <nav class="tabs" ref="tabsScroller" aria-label="功能分頁" @scroll.passive="onTabScroll">
+      <button v-for="t in tabs" :key="t.id" class="tab" :class="{active:tab===t.id}" @click="tab=t.id" :title="t.label" :data-tab-id="t.id">
+        <span class="ico">{{t.icon}}</span><small>{{t.short}}</small>
+      </button>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- 每日行程 -->
+    <section
+      v-if="tab==='itinerary'"
+      @touchstart.passive="onItinerarySwipeStart"
+      @touchmove.passive="onItinerarySwipeMove"
+      @touchend.passive="onItinerarySwipeEnd"
+      @touchcancel.passive="onItinerarySwipeCancel">
+      <div class="itineraryPwaBar">
+        <button class="secondary pwaAction" @click="installApp">⬇️ 安裝 App</button>
+        <button class="secondary pwaAction" @click="enableNotifications">{{notificationButtonText}}</button>
+      </div>
+      <div class="head">
+        <div>
+          <div class="titleLine"><h2>每日行程</h2><span class="versionBadge">v16l</span></div>
+          <p>9/19 — 9/25 · Jeju Island · 左右滑切換日期</p>
+        </div>
+        <span class="badge">{{syncLabel}}</span>
+      </div>
+
+      <div class="dateStrip">
+        <button v-for="d in dates" :key="d.date" class="dateBtn" :data-date="d.date" :class="{active:selectedDate===d.date}" @click="selectedDate=d.date">
+          <div class="dow">{{d.dow}}</div><div class="day">{{d.day}}</div><div class="mon">SEP</div>
+        </button>
+      </div>
+
+      <div class="itinerarySwipeViewport">
+        <div class="itinerarySwipePane" :class="{dragging:itinerarySwipe.dragging}" :style="itinerarySwipeStyle">
+      <article class="weather">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="icon">{{weatherIcon}}</div>
+          <div><b>濟州天氣</b><div class="muted">{{weather.label}}</div></div>
+        </div>
+        <div style="text-align:right"><div class="temp">{{weather.temp ?? '—'}}°</div><div class="muted">體感 {{weather.feels ?? '—'}}°C</div></div>
+      </article>
+
+      <div class="sourceBox" v-if="previousHotel">
+        🏕️ 今日第一段交通起點：{{previousHotel}}
+      </div>
+
+      <div id="sortable" class="stack">
+        <template v-for="(item,i) in dayItems" :key="item.id">
+          <article class="card itineraryCard" :class="{flight:item.category==='✈️航班',hotel:item.category==='🏕️住宿',hasCover:!!item.image}" :data-id="item.id">
+            <div v-if="item.image" class="itineraryCover" :style="{backgroundImage:`url(${item.image})`}"></div>
+            <div v-else-if="item.category!=='✈️航班'" class="itineraryCover fallbackCover">
+              <span>{{item.category==='🏝️景點'?'🏝️':item.category==='🍽️美食'?'🍽️':item.category==='🛍️購物'?'🛍️':item.category==='🏕️住宿'?'🏕️':'📍'}}</span>
+            </div>
+            <div class="itineraryBody">
+            <template v-if="item.category==='✈️航班'">
+              <div class="cardTop">
+                <div><span class="chip">✈️ 航班</span><h3>{{item.name}}</h3></div>
+                <div class="time">{{item.arrival}}</div>
+              </div>
+              <div class="flightRoute">
+                <div class="airport"><b>{{item.from}}</b><small>{{item.depart}}</small></div><div class="line"></div>
+                <div class="airport"><b>{{item.to}}</b><small>{{item.arrive}}</small></div>
+              </div>
+              <p class="muted">{{item.note}}</p>
+            </template>
+            <template v-else>
+              <div class="cardTop">
+                <div><span class="chip">{{item.category}}</span><h3>{{item.name}}</h3></div>
+                <div class="time">{{item.arrival || '--:--'}}</div>
+              </div>
+              <p v-if="item.address" class="muted">📌 {{item.address}}</p>
+              <p v-if="item.checkIn"><b>入住：</b>{{item.checkIn}}</p>
+              <p v-if="item.checkOut"><b>退房：</b>{{item.checkOut}}</p>
+              <p v-if="item.hours"><b>營業時間：</b>{{item.hours}}</p>
+              <p v-if="item.ticket"><b>門票：</b>{{item.ticket}}</p>
+              <p v-if="item.note"><b>特色＆備註：</b>{{item.note}}</p>
+            </template>
+            <div class="actions">
+              <button class="mini naverBtn" @click.stop="openNaver(item)"><span class="naverN">N</span> NAVER Map</button>
+              <button class="mini" @click.stop="editTrip(item)">編輯</button>
+            </div>
+            </div>
+          </article>
+
+          <div v-if="i<dayItems.length-1" class="transport transportEdit">
+            <span class="driveMode">🚗 開車</span>
+
+            <label class="transportField">
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                inputmode="decimal"
+                v-model.number="item.travelKm"
+                @change="saveTransport(item)"
+                @blur="saveTransport(item)"
+                aria-label="交通公里數">
+              <span>km</span>
+            </label>
+
+            <label class="transportField">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                v-model.number="item.travelMinutes"
+                @change="saveTransport(item)"
+                @blur="saveTransport(item)"
+                aria-label="交通分鐘數">
+              <span>分</span>
+            </label>
+
+            <span v-if="item.routeStatus==='loading'" class="routeStatus">估算中…</span>
+            <button v-else class="routeRefresh" @click="estimateLeg(i,true)" title="重新估算">↻</button>
+          </div>
+        </template>
+      </div>
+      <div v-if="dayItems.length===0" class="empty">今天尚未新增景點或餐廳行程。</div>
+        </div>
+      </div>
+      <button class="fab" @click="newTrip">＋</button>
+    </section>
+
+    <!-- 資訊 -->
+    <section v-else-if="tab==='info'">
+      <div class="head"><div><h2>旅行資訊</h2><p>航班、住宿、租車、匯率與緊急資訊</p></div></div>
+      <div class="grid2">
+        <article class="card">
+          <h3>💱 KRW → TWD</h3>
+          <div class="formGrid">
+            <div class="field"><label>韓元</label><input class="input" type="number" inputmode="decimal" v-model.number="fx.krw" @input="convertFx"></div>
+            <div class="field"><label>更新</label><button class="secondary" @click="loadFx">更新今日匯率</button></div>
+          </div>
+          <div style="font-size:29px;font-weight:950;margin-top:13px">≈ NT$ {{money(fx.twd)}}</div>
+          <div class="muted">1 KRW ≈ {{fx.rate ? fx.rate.toFixed(5) : '—'}} TWD · 資料日 {{fx.date || '讀取中'}}</div>
+        </article>
+
+                <article
+          v-for="card in infoCards"
+          :key="card.id"
+          class="card infoCoverCard"
+          :class="[card.type,{hasCover:!!card.image}]">
+          <div v-if="card.image" class="infoCardCover" :style="{backgroundImage:`url(${card.image})`}"></div>
+          <div class="infoCardBody">
+            <template v-if="card.type==='flight'">
+              <div class="cardTop">
+                <div><span class="chip">{{card.label || '航班'}}</span><h3>{{card.title}}</h3></div>
+                <div class="time">{{card.date}}</div>
+              </div>
+              <div class="flightRoute">
+                <div class="airport"><b>{{card.from}}</b><small>{{card.depart}}</small></div>
+                <div class="line"></div>
+                <div class="airport"><b>{{card.to}}</b><small>{{card.arrive}}</small></div>
+              </div>
+              <div class="infoRow"><span>航線</span><strong>{{card.route}}</strong></div>
+              <div class="infoRow"><span>時間</span><strong>{{card.time}}</strong></div>
+            </template>
+
+            <template v-else-if="card.type==='hotel'">
+              <h3>🏕️ {{card.title}}</h3>
+              <div class="infoRow"><span>住宿日期</span><strong>{{card.dates}}</strong></div>
+              <div class="infoRow"><span>入住</span><strong>{{card.checkIn}}</strong></div>
+              <div class="infoRow"><span>退房</span><strong>{{card.checkOut}}</strong></div>
+              <div class="infoRow"><span>電話</span><strong>{{card.phone || '尚未填寫'}}</strong></div>
+              <div class="infoRow"><span>地址</span><strong>{{card.address}}</strong></div>
+            </template>
+
+            <template v-else-if="card.type==='car'">
+              <h3>🚙 {{card.title}}</h3>
+              <div class="infoRow"><span>店名</span><strong>{{card.shop}}</strong></div>
+              <div class="infoRow"><span>地址</span><strong>{{card.address}}</strong></div>
+              <div class="infoRow"><span>取車</span><strong>{{card.pickup}}</strong></div>
+              <div class="infoRow"><span>還車</span><strong>{{card.returnTime}}</strong></div>
+            </template>
+
+            <div class="actions infoCardActions">
+              <button v-if="card.address" class="mini naverBtn" @click.stop="openNaver(card)">
+                <span class="naverN">N</span> NAVER Map
+              </button>
+              <button class="mini" @click.stop="editInfoCard(card)">編輯資訊</button>
+            </div>
+          </div>
+        </article>
+
+<article class="card">
+          <h3>🚨 緊急資訊</h3>
+          <div class="infoRow"><span>警察</span><strong>112</strong></div>
+          <div class="infoRow"><span>消防 / 救護車</span><strong>119</strong></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 收藏頁 -->
+    <section v-else-if="['shopping','spots','food'].includes(tab)">
+      <div class="head"><div><h2>{{meta.title}}</h2><p>{{meta.desc}}</p></div><span class="badge">{{meta.icon}}</span></div>
+      <div class="stack">
+        <article class="card thumbRow" v-for="x in collection" :key="x.id" @click="editGeneric(x)">
+          <div class="thumb"><img v-if="x.image" :src="x.image"><span v-else>{{meta.icon}}</span></div>
+          <div>
+            <div class="cardTop"><h3 style="margin:0">{{x.name}}</h3><b v-if="x.price">{{x.currency==='KRW'?'₩':'NT$'}} {{money(x.price)}}</b></div>
+            <p v-if="x.hours" class="muted">{{x.hours}}</p>
+            <p v-if="x.address" class="muted">📌 {{x.address}}</p>
+            <p v-if="x.note" class="cardNote">📝 {{x.note}}</p>
+            <button v-if="x.address" class="mini naverBtn" @click.stop="openNaver(x)"><span class="naverN">N</span> 導航</button>
+          </div>
+        </article>
+        <div v-if="collection.length===0" class="empty">還沒有資料，按右下角 ＋ 新增。</div>
+      </div>
+      <button class="fab" @click="newGeneric">＋</button>
+    </section>
+
+    <!-- 花費 -->
+    <section v-else-if="tab==='expenses'">
+      <div class="head"><div><h2>花費</h2><p>旅行中的每一筆支出</p></div></div>
+      <article class="card total" style="margin-bottom:14px"><div style="opacity:.78;font-size:12px">總花費（換算台幣）</div><div class="num">NT$ {{money(expenseTwd)}}</div></article>
+      <div class="stack">
+        <article class="card" v-for="x in expenses" :key="x.id" @click="editExpense(x)">
+          <div class="cardTop"><div><span class="chip">{{x.category}}</span><h3>{{x.name}}</h3></div><b>{{x.currency==='KRW'?'₩':'NT$'}} {{money(x.amount)}}</b></div>
+          <p class="muted">{{x.date}} · {{x.payment}}</p>
+          <p v-if="x.note" class="cardNote">📝 {{x.note}}</p>
+        </article>
+      </div>
+      <button class="fab" @click="newExpense">＋</button>
+    </section>
+
+    <!-- 預支 -->
+    <section v-else-if="tab==='advance'">
+      <div class="head"><div><h2>分帳費</h2><p>四人應收、應付與分攤</p></div></div>
+      <div class="grid2" style="margin-bottom:14px">
+        <article class="card" v-for="s in settlements" :key="s.person">
+          <h3>{{s.person}}</h3>
+          <div :style="{fontWeight:950,fontSize:'20px',color:s.net>=0?'#23865f':'#c45d55'}">{{s.net>=0?'應收':'應付'}} NT$ {{money(Math.abs(s.net))}}</div>
+        </article>
+      </div>
+      <div class="stack">
+        <article class="card" v-for="x in advances" :key="x.id" @click="editAdvance(x)">
+          <div class="cardTop"><div><span class="chip">{{x.category}}</span><h3>{{x.name}}</h3></div><b>{{x.currency==='KRW'?'₩':'NT$'}} {{money(x.amount)}}</b></div>
+          <p class="muted">{{x.date}}</p>
+          <p>💳 付款：{{x.payers.join('、') || '—'}}</p>
+          <p>💸 分攤：{{x.sharers.join('、') || '—'}}</p>
+          <p v-if="x.note" class="cardNote">📝 {{x.note}}</p>
+        </article>
+      </div>
+      <button class="fab" @click="newAdvance">＋</button>
+    </section>
+  </main>
+
+  <!-- 行程 Modal -->
+  <div v-if="modal.type==='trip'" class="modalWrap" @click.self="closeModal">
+    <div class="modal">
+      <div class="handle"></div><div class="modalHead"><h3>{{modal.edit?'編輯行程':'新增行程'}}</h3><button class="close" @click="closeModal">✕</button></div>
+      <div class="formGrid">
+        <div class="field"><label>類別</label><select class="select" v-model="form.category"><option v-for="c in tripCategories">{{c}}</option></select></div>
+        <div class="field"><label>預計抵達時間</label>
+          <select class="select" v-model="form.arrival">
+            <option value="">請選擇時間</option>
+            <option v-for="t in timeOptions" :key="'arrival-'+t" :value="t">{{t}}</option>
+          </select>
+        </div>
+        <div class="field span2"><label>名稱</label><input class="input" v-model="form.name"></div>
+        <div class="field span2"><label>韓文地址</label><input class="input" v-model="form.address" placeholder="제주특별자치도 ..."></div>
+        <div class="field"><label>營業時間</label><input class="input" v-model="form.hours"></div>
+        <div class="field"><label>預約時間</label>
+          <select class="select" v-model="form.booking">
+            <option value="">無 / 尚未預約</option>
+            <option v-for="t in timeOptions" :key="'booking-'+t" :value="t">{{t}}</option>
+          </select>
+        </div>
+        <div class="field"><label>門票費用</label><input class="input" v-model="form.ticket"></div>
+        <div class="field"><label>交通時間（分鐘）</label><input class="input" type="number" min="0" v-model.number="form.travelMinutes"></div>
+        <div class="field span2">
+          <label>景點 / 行程照片</label>
+          <input class="input" type="file" accept="image/*" @change="pickImage">
+          <small v-if="imageProcessing" class="muted">照片處理中…請等完成後再儲存</small>
+          <img v-if="form.image" :src="form.image" class="modalImagePreview" alt="行程封面預覽">
+        </div>
+        <div class="field span2"><label>特色＆備註</label><textarea class="textarea" v-model="form.note"></textarea></div>
+      </div>
+      <div class="note" style="margin-top:11px">交通距離與時間會透過 Cloud Run 安全呼叫 Kakao Mobility 自動估算；若地址無法定位，仍可手動調整交通公里數與分鐘數。</div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button v-if="modal.edit" class="secondary dangerBtn" @click="deleteTrip">刪除</button>
+        <button class="primary" style="flex:1" @click="saveTrip" :disabled="imageProcessing">{{imageProcessing?'照片處理中…':'儲存行程'}}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 資訊卡 Modal -->
+  <div v-if="modal.type==='infoCard'" class="modalWrap" @click.self="closeModal">
+    <div class="modal">
+      <div class="handle"></div>
+      <div class="modalHead"><h3>編輯資訊卡</h3><button class="close" @click="closeModal">✕</button></div>
+
+      <div class="formGrid">
+        <div class="field span2"><label>卡片標題</label><input class="input" v-model="form.title"></div>
+
+        <template v-if="form.type==='flight'">
+          <div class="field"><label>標籤</label><input class="input" v-model="form.label" placeholder="去程 / 回程"></div>
+          <div class="field"><label>日期</label><input class="input" v-model="form.date" placeholder="9/19"></div>
+          <div class="field"><label>起點代碼</label><input class="input" v-model="form.from" placeholder="TPE"></div>
+          <div class="field"><label>起飛時間</label><input class="input" v-model="form.depart" placeholder="02:50"></div>
+          <div class="field"><label>終點代碼</label><input class="input" v-model="form.to" placeholder="CJU"></div>
+          <div class="field"><label>抵達時間</label><input class="input" v-model="form.arrive" placeholder="06:05"></div>
+          <div class="field span2"><label>航線</label><input class="input" v-model="form.route" placeholder="桃園 → 濟州"></div>
+          <div class="field span2"><label>時間文字</label><input class="input" v-model="form.time" placeholder="02:50–06:05"></div>
+        </template>
+
+        <template v-else-if="form.type==='hotel'">
+          <div class="field"><label>住宿日期</label><input class="input" v-model="form.dates"></div>
+          <div class="field"><label>電話</label><input class="input" v-model="form.phone"></div>
+          <div class="field"><label>入住</label><input class="input" v-model="form.checkIn"></div>
+          <div class="field"><label>退房</label><input class="input" v-model="form.checkOut"></div>
+          <div class="field span2"><label>地址</label><input class="input" v-model="form.address"></div>
+        </template>
+
+        <template v-else-if="form.type==='car'">
+          <div class="field span2"><label>店名</label><input class="input" v-model="form.shop"></div>
+          <div class="field span2"><label>地址</label><input class="input" v-model="form.address"></div>
+          <div class="field"><label>取車</label><input class="input" v-model="form.pickup"></div>
+          <div class="field"><label>還車</label><input class="input" v-model="form.returnTime"></div>
+        </template>
+
+        <div class="field span2">
+          <label>資訊卡封面照片</label>
+          <input class="input" type="file" accept="image/*" @change="pickImage">
+          <small v-if="imageProcessing" class="muted">照片處理中…</small>
+          <img v-if="form.image" :src="form.image" class="modalImagePreview" alt="資訊卡封面預覽">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="primary" style="flex:1" @click="saveInfoCard" :disabled="imageProcessing">
+          {{imageProcessing?'照片處理中…':'儲存資訊'}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 收藏 Modal -->
+  <div v-if="modal.type==='generic'" class="modalWrap" @click.self="closeModal">
+    <div class="modal">
+      <div class="handle"></div><div class="modalHead"><h3>{{modal.edit?'編輯':'新增'}}{{meta.title}}</h3><button class="close" @click="closeModal">✕</button></div>
+      <div class="formGrid">
+        <div class="field span2"><label>{{tab==='shopping'?'商品名稱':tab==='spots'?'景點名稱':'名稱'}}</label><input class="input" v-model="form.name"></div>
+        <template v-if="tab!=='food'">
+          <div class="field"><label>{{tab==='spots'?'門票 / 預估費用':'價格'}}</label><input class="input" type="number" v-model.number="form.price"></div>
+          <div class="field"><label>幣值</label><select class="select" v-model="form.currency"><option value="KRW">韓幣 KRW</option><option value="TWD">台幣 TWD</option></select></div>
+        </template>
+        <div v-if="tab!=='shopping'" class="field"><label>營業時間</label><input class="input" v-model="form.hours"></div>
+        <div class="field" :class="{span2:tab==='shopping'}"><label>韓文地址</label><input class="input" v-model="form.address"></div>
+        <div class="field span2"><label>圖片（可從 iPad / 手機相簿選擇）</label><input class="input" type="file" accept="image/*" @change="pickImage"></div>
+        <div class="field span2"><label>備註</label><textarea class="textarea" v-model="form.note"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button v-if="modal.edit" class="secondary dangerBtn" @click="deleteGeneric">刪除</button>
+        <button class="primary" style="flex:1" @click="saveGeneric">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 花費 Modal -->
+  <div v-if="modal.type==='expense'" class="modalWrap" @click.self="closeModal">
+    <div class="modal">
+      <div class="handle"></div><div class="modalHead"><h3>{{modal.edit?'編輯花費':'新增花費'}}</h3><button class="close" @click="closeModal">✕</button></div>
+      <div class="formGrid">
+        <div class="field"><label>類別</label><select class="select" v-model="form.category"><option v-for="c in expenseCategories">{{c}}</option></select></div>
+        <div class="field"><label>日期</label><input class="input" type="date" v-model="form.date"></div>
+        <div class="field span2"><label>名稱</label><input class="input" v-model="form.name"></div>
+        <div class="field"><label>價格</label><input class="input" type="number" v-model.number="form.amount"></div>
+        <div class="field"><label>幣值</label><select class="select" v-model="form.currency"><option value="KRW">韓幣 KRW</option><option value="TWD">台幣 TWD</option></select></div>
+        <div class="field"><label>付款方式</label><select class="select" v-model="form.payment"><option>💵現金</option><option>💳信用卡</option></select></div>
+        <div class="field"><label>收據照片</label><input class="input" type="file" accept="image/*" @change="pickImage"></div>
+        <div class="field span2"><label>備註</label><textarea class="textarea" v-model="form.note"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px"><button v-if="modal.edit" class="secondary dangerBtn" @click="deleteExpense">刪除</button><button class="primary" style="flex:1" @click="saveExpense">儲存</button></div>
+    </div>
+  </div>
+
+  <!-- 預支 Modal -->
+  <div v-if="modal.type==='advance'" class="modalWrap" @click.self="closeModal">
+    <div class="modal">
+      <div class="handle"></div><div class="modalHead"><h3>{{modal.edit?'編輯分帳費':'新增分帳費'}}</h3><button class="close" @click="closeModal">✕</button></div>
+      <div class="formGrid">
+        <div class="field"><label>類別</label><select class="select" v-model="form.category"><option v-for="c in expenseCategories">{{c}}</option></select></div>
+        <div class="field"><label>日期</label><input class="input" type="date" v-model="form.date"></div>
+        <div class="field span2"><label>名稱</label><input class="input" v-model="form.name"></div>
+        <div class="field"><label>金額</label><input class="input" type="number" v-model.number="form.amount"></div>
+        <div class="field"><label>幣值</label><select class="select" v-model="form.currency"><option value="KRW">韓幣 KRW</option><option value="TWD">台幣 TWD</option></select></div>
+        <div class="field span2"><label>💳 付款人（誰先出的錢？可複選）</label><div class="checks"><label class="check" v-for="p in people"><input type="checkbox" :value="p" v-model="form.payers"> {{p}}</label></div></div>
+        <div class="field span2"><label>💸 預支 / 分攤人（誰要一起分攤？可複選）</label><div class="checks"><label class="check" v-for="p in people"><input type="checkbox" :value="p" v-model="form.sharers"> {{p}}</label></div></div>
+        <div class="field span2"><label>收據照片</label><input class="input" type="file" accept="image/*" @change="pickImage"></div>
+        <div class="field span2"><label>備註</label><textarea class="textarea" v-model="form.note"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px"><button v-if="modal.edit" class="secondary dangerBtn" @click="deleteAdvance">刪除</button><button class="primary" style="flex:1" @click="saveAdvance">儲存</button></div>
+    </div>
+  </div>
+
+  <div v-if="toast" class="toast">{{toast}}</div>
+</div>
+
+<script>
+const {createApp}=Vue;
+const supabaseClient = window.supabase.createClient(
+  'https://qpoqilvkvotqkhqnsart.supabase.co',
+  'sb_publishable_qafSe83SJo-BuQoQOZMTCA_7SgMoH_B',
+  { auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }
+);
+createApp({
+  data(){return{
+    tab:'itinerary',selectedDate:'2026-09-19',sortable:null,toast:'',
+    routesApiUrl:'https://jeju-routes-api-913779091484.asia-northeast3.run.app',
+    auth:{loading:true,signing:false,user:null,email:'',password:'',error:''},
+    sync:{loading:false,ready:false,error:'',channel:null,timer:null},
+    tabScrollTimer:null,
+    itinerarySwipe:{x:0,y:0,dx:0,active:false,dragging:false,transition:false,opacity:1},
+    tabs:[
+      {id:'itinerary',icon:'📍',short:'行程',label:'每日行程表'},{id:'info',icon:'ⓘ',short:'資訊',label:'資訊'},
+      {id:'shopping',icon:'🧺',short:'購物',label:'購物清單'},{id:'spots',icon:'⛰️',short:'景點',label:'景點'},
+      {id:'food',icon:'🍴',short:'餐廳',label:'餐廳'},{id:'expenses',icon:'💵',short:'花費',label:'花費'},
+      {id:'advance',icon:'🪙',short:'分帳',label:'分帳費'}],
+    dates:[
+      {date:'2026-09-19',dow:'Sat',day:19},{date:'2026-09-20',dow:'Sun',day:20},{date:'2026-09-21',dow:'Mon',day:21},
+      {date:'2026-09-22',dow:'Tue',day:22},{date:'2026-09-23',dow:'Wed',day:23},{date:'2026-09-24',dow:'Thu',day:24},{date:'2026-09-25',dow:'Fri',day:25}],
+    tripCategories:['🏝️景點','🏕️住宿','🍽️美食','🛍️購物','✈️航班','🎲其他'],
+    expenseCategories:['🚗交通','🍽️飲食','🏕️住宿','🎫門票','🛍️購物','🎲其他'],
+    people:['陳','林','鄧','吳'],
+    timeOptions:Array.from({length:96},(_,i)=>{
+      const h=String(Math.floor(i/4)).padStart(2,'0');
+      const m=String((i%4)*15).padStart(2,'0');
+      return `${h}:${m}`;
+    }),
+    hotels:[
+      {name:'Sumgil',dates:'9/19–9/22',address:'제주특별자치도 제주시 구좌읍 월정5길 38-8',phone:''},
+      {name:'濟州石牆 Aewol',dates:'9/22–9/25',address:'제주 제주시 애월읍 유수암리 1654-5',phone:''}],
+    infoCards:[],
+    itinerary:{},shopping:[],spots:[],food:[],expenses:[],advances:[],
+    imageProcessing:false,
+    fx:{krw:10000,twd:0,rate:0,date:''},
+    weather:{temp:null,feels:null,code:null,label:'讀取中'},
+    modal:{type:null,edit:false,id:null},form:{},
+    pwa:{deferredPrompt:null,notificationPermission:('Notification' in window?Notification.permission:'unsupported'),swReg:null},
+    pullRefresh:{startY:0,distance:0,active:false,ready:false,tracking:false},
+    appVersion:'v16l',
+    updateCheckTimer:null
+  }},
+  computed:{
+    itinerarySwipeStyle(){
+      return {
+        transform:`translate3d(${this.itinerarySwipe.dx}px,0,0)`,
+        opacity:this.itinerarySwipe.opacity,
+        transition:this.itinerarySwipe.transition
+          ? 'transform .18s cubic-bezier(.22,.75,.28,1), opacity .18s ease'
+          : 'none'
+      };
+    },
+    displayUser(){return this.auth.user?.user_metadata?.display_name || this.auth.user?.email?.split('@')[0] || '旅伴'},
+    syncLabel(){
+      if(this.sync.loading)return '☁️ 同步中';
+      if(this.sync.error)return '⚠️ 同步異常';
+      return this.sync.ready?'☁️ 四人同步':'📍 自駕旅行'
+    },
+    dayItems(){return this.itinerary[this.selectedDate]||[]},
+    previousHotel(){
+      const map={
+        '2026-09-20':'Sumgil','2026-09-21':'Sumgil','2026-09-22':'Sumgil',
+        '2026-09-23':'濟州石牆 Aewol','2026-09-24':'濟州石牆 Aewol','2026-09-25':'濟州石牆 Aewol'
+      };return map[this.selectedDate]||''
+    },
+    meta(){return({
+      shopping:{title:'購物清單',desc:'想買的伴手禮與商品',icon:'🧺'},
+      spots:{title:'景點收藏',desc:'先收藏，有空再排進每日行程',icon:'⛰️'},
+      food:{title:'餐廳收藏',desc:'濟州島美食口袋名單',icon:'🍴'}
+    })[this.tab]||{}},
+    collection(){return this[this.tab]||[]},
+    weatherIcon(){const c=this.weather.code;if(c===null)return'🌤️';if(c===0)return'☀️';if([1,2,3,45,48].includes(c))return'☁️';if([71,73,75,77,85,86].includes(c))return'❄️';if(c>=51)return'🌧️';return'🌤️'},
+    expenseTwd(){return this.expenses.reduce((s,x)=>s+this.toTwd(x.amount,x.currency),0)},
+    notificationButtonText(){
+      if(this.pwa.notificationPermission==='granted') return '🔔 通知已開啟';
+      if(this.pwa.notificationPermission==='denied') return '🔕 通知已封鎖';
+      if(this.pwa.notificationPermission==='unsupported') return '🔔 不支援通知';
+      return '🔔 開啟通知';
+    },
+    settlements(){
+      const net=Object.fromEntries(this.people.map(p=>[p,0]));
+      this.advances.forEach(x=>{
+        const v=this.toTwd(x.amount,x.currency),p=x.payers||[],s=x.sharers||[];
+        if(!p.length||!s.length)return;
+        p.forEach(a=>net[a]+=v/p.length); s.forEach(a=>net[a]-=v/s.length);
+      });
+      return this.people.map(person=>({person,net:net[person]}))
+    }
+  },
+  watch:{
+    tab(){this.$nextTick(this.setupSortable)},
+    selectedDate(){
+      this.loadWeather();
+      this.$nextTick(()=>{
+        this.setupSortable();
+        this.scrollSelectedDateIntoView();
+        this.autoEstimateDay(this.selectedDate);
+      })
+    },
+    expenses:{deep:true,handler(){this.savePrivate()}}
+  },
+  async mounted(){
+    this.restorePrivate();
+    this.loadFx();
+    this.loadWeather();
+    await this.initPWA();
+    this.initPullToRefresh();
+    const {data}=await supabaseClient.auth.getSession();
+    this.auth.user=data.session?.user||null;
+    this.auth.loading=false;
+    if(this.auth.user) await this.startShared();
+    supabaseClient.auth.onAuthStateChange(async (_event,session)=>{
+      this.auth.user=session?.user||null;
+      if(this.auth.user) await this.startShared();
+      else this.stopRealtime();
+    });
+    this.$nextTick(this.setupSortable)
+    this.startReminderLoop();
+  },
+  methods:{
+    uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)},
+    onItinerarySwipeStart(e){
+      if(this.modal.type || e.touches?.length!==1)return;
+      const target=e.target;
+      if(target?.closest?.('.dateStrip,button,input,select,textarea,a,.transportField')){
+        this.resetItinerarySwipe();
+        return;
+      }
+      this.itinerarySwipe.x=e.touches[0].clientX;
+      this.itinerarySwipe.y=e.touches[0].clientY;
+      this.itinerarySwipe.dx=0;
+      this.itinerarySwipe.active=true;
+      this.itinerarySwipe.dragging=false;
+      this.itinerarySwipe.transition=false;
+      this.itinerarySwipe.opacity=1;
+    },
+    onItinerarySwipeMove(e){
+      if(!this.itinerarySwipe.active || e.touches?.length!==1)return;
+      const t=e.touches[0];
+      const dx=t.clientX-this.itinerarySwipe.x;
+      const dy=t.clientY-this.itinerarySwipe.y;
+
+      if(!this.itinerarySwipe.dragging){
+        if(Math.abs(dx)<10)return;
+        if(Math.abs(dy)>Math.abs(dx)*1.15){
+          this.resetItinerarySwipe();
+          return;
+        }
+        this.itinerarySwipe.dragging=true;
+      }
+
+      const i=this.dates.findIndex(d=>d.date===this.selectedDate);
+      const atStart=i===0 && dx>0;
+      const atEnd=i===this.dates.length-1 && dx<0;
+      const resistance=(atStart||atEnd)?.28:1;
+      const visualDx=Math.max(-130,Math.min(130,dx*resistance));
+      this.itinerarySwipe.dx=visualDx;
+      this.itinerarySwipe.opacity=Math.max(.72,1-Math.abs(visualDx)/480);
+    },
+    async onItinerarySwipeEnd(e){
+      if(!this.itinerarySwipe.active)return;
+      const t=e.changedTouches?.[0];
+      const dx=t ? t.clientX-this.itinerarySwipe.x : this.itinerarySwipe.dx;
+      const dy=t ? t.clientY-this.itinerarySwipe.y : 0;
+
+      if(!this.itinerarySwipe.dragging || Math.abs(dx)<65 || Math.abs(dx)<Math.abs(dy)*1.2){
+        this.itinerarySwipe.transition=true;
+        this.itinerarySwipe.dx=0;
+        this.itinerarySwipe.opacity=1;
+        setTimeout(()=>this.resetItinerarySwipe(),190);
+        return;
+      }
+
+      const i=this.dates.findIndex(d=>d.date===this.selectedDate);
+      if(i<0){this.resetItinerarySwipe();return}
+      const direction=dx<0?1:-1;
+      const nextIndex=i+direction;
+
+      if(nextIndex<0 || nextIndex>=this.dates.length){
+        this.itinerarySwipe.transition=true;
+        this.itinerarySwipe.dx=0;
+        this.itinerarySwipe.opacity=1;
+        setTimeout(()=>this.resetItinerarySwipe(),190);
+        return;
+      }
+
+      // 先讓目前整組行程卡滑出去
+      this.itinerarySwipe.transition=true;
+      this.itinerarySwipe.dx=direction>0?-150:150;
+      this.itinerarySwipe.opacity=.15;
+
+      await new Promise(r=>setTimeout(r,150));
+
+      // 換日後，從另一側滑進來
+      this.selectedDate=this.dates[nextIndex].date;
+      this.itinerarySwipe.transition=false;
+      this.itinerarySwipe.dx=direction>0?120:-120;
+      this.itinerarySwipe.opacity=.15;
+
+      await this.$nextTick();
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          this.itinerarySwipe.transition=true;
+          this.itinerarySwipe.dx=0;
+          this.itinerarySwipe.opacity=1;
+          setTimeout(()=>this.resetItinerarySwipe(),210);
+        });
+      });
+    },
+    onItinerarySwipeCancel(){
+      this.itinerarySwipe.transition=true;
+      this.itinerarySwipe.dx=0;
+      this.itinerarySwipe.opacity=1;
+      setTimeout(()=>this.resetItinerarySwipe(),190);
+    },
+    resetItinerarySwipe(){
+      this.itinerarySwipe.x=0;
+      this.itinerarySwipe.y=0;
+      this.itinerarySwipe.dx=0;
+      this.itinerarySwipe.active=false;
+      this.itinerarySwipe.dragging=false;
+      this.itinerarySwipe.transition=false;
+      this.itinerarySwipe.opacity=1;
+    },
+    scrollSelectedDateIntoView(){
+      const btn=document.querySelector(`.dateBtn[data-date="${this.selectedDate}"]`);
+      btn?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    },
+    savePrivate(){
+      localStorage.setItem('jeju-private-v1',JSON.stringify({
+        expenses:this.expenses
+      }))
+    },
+    restorePrivate(){
+      try{
+        const d=JSON.parse(localStorage.getItem('jeju-private-v1')||'null');
+        if(d){this.expenses=d.expenses||[]}
+      }catch(e){}
+    },
+    async signIn(){
+      this.auth.error='';
+      if(!this.auth.email||!this.auth.password){this.auth.error='請輸入 Email 與密碼';return}
+      this.auth.signing=true;
+      const {data,error}=await supabaseClient.auth.signInWithPassword({email:this.auth.email,password:this.auth.password});
+      this.auth.signing=false;
+      if(error){this.auth.error='登入失敗：'+error.message;return}
+      this.auth.user=data.user;
+      this.auth.password='';
+      await this.startShared()
+    },
+    async signOut(){
+      await supabaseClient.auth.signOut();
+      this.auth.user=null;
+      this.stopRealtime()
+    },
+    async startShared(){
+      if(!this.auth.user)return;
+      await this.loadShared();
+      await this.seedSharedIfNeeded();
+      await this.seedInfoIfNeeded();
+      await this.loadShared();
+      this.subscribeRealtime()
+    },
+    async loadShared(){
+      if(!this.auth.user)return;
+      this.sync.loading=true;this.sync.error='';
+      const {data,error}=await supabaseClient
+        .from('shared_items')
+        .select('id,section,trip_date,sort_order,payload,updated_at')
+        .order('sort_order',{ascending:true});
+      this.sync.loading=false;
+      if(error){this.sync.error=error.message;this.flash('共同資料讀取失敗');return}
+      const itinerary={},spots=[],food=[],shopping=[],advances=[],infoCards=[];
+      (data||[]).forEach(row=>{
+        const item={...(row.payload||{}),id:row.id,_updated_at:row.updated_at};
+        if(row.section==='itinerary'){
+          const d=row.trip_date||item.date;
+          if(!itinerary[d])itinerary[d]=[];
+          itinerary[d].push({...item,date:d,travelKm:Number(item.travelKm)||0,travelMinutes:Number(item.travelMinutes)||0,_sort:row.sort_order||0})
+        }else if(row.section==='spots')spots.push(item);
+        else if(row.section==='food')food.push(item);
+        else if(row.section==='shopping')shopping.push(item);
+        else if(row.section==='advances')advances.push(item);
+        else if(row.section==='info')infoCards.push({...item,_sort:row.sort_order||0});
+      });
+      Object.values(itinerary).forEach(arr=>arr.sort((a,b)=>(a._sort||0)-(b._sort||0)));
+      this.itinerary=itinerary;
+      this.spots=spots;
+      this.food=food;
+      this.shopping=shopping;
+      this.advances=advances;
+      this.infoCards=infoCards.sort((a,b)=>(a._sort||0)-(b._sort||0));
+      this.sync.ready=true;
+      this.$nextTick(()=>{
+        this.setupSortable();
+        this.autoEstimateDay(this.selectedDate);
+      })
+    },
+    async resetOutboundFlight(){
+      if(!this.auth.user)return;
+
+      const flight={
+        id:'seed-flight-out',
+        date:'2026-09-19',
+        category:'✈️航班',
+        name:'ZE886 桃園 → 濟州',
+        arrival:'06:05',
+        address:'제주국제공항',
+        note:'易斯達航空 · 02:50 起飛 / 06:05 抵達',
+        transportMode:'🚗 開車',
+        travelKm:0,
+        travelMinutes:20,
+        from:'TPE',
+        to:'CJU',
+        depart:'02:50',
+        arrive:'06:05',
+        airline:'易斯達航空'
+      };
+
+      const {error}=await supabaseClient.from('shared_items').upsert({
+        id:'seed-flight-out',
+        section:'itinerary',
+        trip_date:'2026-09-19',
+        sort_order:0,
+        payload:flight,
+        updated_by:this.auth.user.id,
+        updated_at:new Date().toISOString()
+      },{onConflict:'id'});
+
+      if(error){
+        console.warn('重設 9/19 ZE886 航班失敗',error);
+        this.flash('9/19 航班資料更新失敗');
+      }
+    },
+    async seedSharedIfNeeded(){
+      const {count,error}=await supabaseClient.from('shared_items').select('*',{count:'exact',head:true}).eq('section','itinerary');
+      if(error||count>0)return;
+      const H1='제주특별자치도 제주시 구좌읍 월정5길 38-8';
+      const H2='제주 제주시 애월읍 유수암리 1654-5';
+      const mk=(id,date,cat,name,arrival,address,note='',extra={})=>({id,date,category:cat,name,arrival,address,note,transportMode:'🚗 開車',travelKm:0,travelMinutes:20,...extra});
+      const rows=[];
+      const add=(x,sort)=>rows.push({id:x.id,section:'itinerary',trip_date:x.date,sort_order:sort,payload:x,updated_by:this.auth.user.id});
+      add(mk('seed-flight-out','2026-09-19','✈️航班','ZE886 桃園 → 濟州','06:05','제주국제공항','易斯達航空 · 02:50 起飛 / 06:05 抵達',{from:'TPE',to:'CJU',depart:'02:50',arrive:'06:05',airline:'易斯達航空'}),0);
+      add(mk('seed-sumgil-in','2026-09-19','🏕️住宿','Sumgil 入住','16:00',H1,'9/19–9/22',{checkIn:'16:00',checkOut:'11:00'}),1);
+      add(mk('seed-sumgil-20','2026-09-20','🏕️住宿','Sumgil','22:00',H1,'今晚住宿',{checkIn:'16:00',checkOut:'11:00'}),0);
+      add(mk('seed-sumgil-21','2026-09-21','🏕️住宿','Sumgil','22:00',H1,'今晚住宿',{checkIn:'16:00',checkOut:'11:00'}),0);
+      add(mk('seed-sumgil-out','2026-09-22','🏕️住宿','Sumgil 退房','11:00',H1,'第一間民宿退房',{checkOut:'11:00'}),0);
+      add(mk('seed-aewol-in','2026-09-22','🏕️住宿','濟州石牆 Aewol 入住','16:00',H2,'第二間住宿入住',{checkIn:'16:00',checkOut:'11:00'}),1);
+      add(mk('seed-aewol-23','2026-09-23','🏕️住宿','濟州石牆 Aewol','22:00',H2,'今晚住宿',{checkIn:'16:00',checkOut:'11:00'}),0);
+      add(mk('seed-aewol-24','2026-09-24','🏕️住宿','濟州石牆 Aewol','22:00',H2,'今晚住宿',{checkIn:'16:00',checkOut:'11:00'}),0);
+      add(mk('seed-aewol-out','2026-09-25','🏕️住宿','濟州石牆 Aewol 退房','11:00',H2,'退房',{checkOut:'11:00'}),0);
+      add(mk('seed-flight-back','2026-09-25','✈️航班','ZE885 濟州 → 桃園','22:40','제주국제공항','易斯達航空 · 22:40 起飛 / 23:50 抵達',{from:'CJU',to:'TPE',depart:'22:40',arrive:'23:50'}),1);
+      const {error:seedError}=await supabaseClient.from('shared_items').upsert(rows,{onConflict:'id'});
+      if(seedError)this.sync.error=seedError.message
+    },
+    async seedInfoIfNeeded(){
+      if(!this.auth.user)return;
+      const {count,error}=await supabaseClient
+        .from('shared_items')
+        .select('*',{count:'exact',head:true})
+        .eq('section','info');
+      if(error||count>0)return;
+
+      const defaults=[
+        {
+          id:'info-flight-out',type:'flight',label:'去程',title:'易斯達航空 · ZE886',
+          date:'9/19',from:'TPE',depart:'02:50',to:'CJU',arrive:'06:05',
+          route:'桃園 → 濟州',time:'02:50–06:05',image:''
+        },
+        {
+          id:'info-flight-back',type:'flight',label:'回程',title:'Eastar Jet · ZE885',
+          date:'9/25',from:'CJU',depart:'22:40',to:'TPE',arrive:'23:50',
+          route:'濟州 → 桃園',time:'22:40–23:50',image:''
+        },
+        {
+          id:'info-hotel-sumgil',type:'hotel',title:'Sumgil',
+          dates:'9/19–9/22',checkIn:'16:00',checkOut:'11:00',phone:'',
+          address:'제주특별자치도 제주시 구좌읍 월정5길 38-8',image:''
+        },
+        {
+          id:'info-hotel-aewol',type:'hotel',title:'濟州石牆 Aewol',
+          dates:'9/22–9/25',checkIn:'16:00',checkOut:'11:00',phone:'',
+          address:'제주 제주시 애월읍 유수암리 1654-5',image:''
+        },
+        {
+          id:'info-rental',type:'car',title:'樂天濟州租車',
+          shop:'롯데렌터카제주오토하우스',address:'제주 제주시 용해로 92（1層）',
+          pickup:'9/19 07:30',returnTime:'9/25 19:30',image:''
+        }
+      ];
+
+      const rows=defaults.map((x,i)=>({
+        id:x.id,section:'info',trip_date:null,sort_order:i,payload:x,
+        updated_by:this.auth.user.id,updated_at:new Date().toISOString()
+      }));
+      const {error:seedError}=await supabaseClient.from('shared_items').upsert(rows,{onConflict:'id'});
+      if(seedError){
+        console.warn('資訊卡初始資料建立失敗',seedError);
+        this.flash('資訊卡初始化失敗');
+      }
+    },
+
+    subscribeRealtime(){
+      this.stopRealtime();
+      this.sync.channel=supabaseClient
+        .channel('jeju-shared-items')
+        .on('postgres_changes',{event:'*',schema:'public',table:'shared_items'},()=>{
+          clearTimeout(this.sync.timer);
+          this.sync.timer=setTimeout(()=>this.loadShared(),180)
+        })
+        .subscribe()
+    },
+    stopRealtime(){
+      if(this.sync.channel){supabaseClient.removeChannel(this.sync.channel);this.sync.channel=null}
+    },
+    async upsertShared(section,item,tripDate=null,sortOrder=0){
+      if(!this.auth.user)return;
+      const row={
+        id:item.id,section,trip_date:tripDate,sort_order:sortOrder,
+        payload:item,updated_by:this.auth.user.id,updated_at:new Date().toISOString()
+      };
+      const {error}=await supabaseClient.from('shared_items').upsert(row,{onConflict:'id'});
+      if(error){this.sync.error=error.message;this.flash('同步失敗：'+error.message)}
+    },
+    async deleteShared(id){
+      const {error}=await supabaseClient.from('shared_items').delete().eq('id',id);
+      if(error){this.sync.error=error.message;this.flash('刪除同步失敗')}
+    },
+    async saveDayOrder(){
+      const list=this.itinerary[this.selectedDate]||[];
+      await Promise.all(list.map((x,i)=>this.upsertShared('itinerary',x,this.selectedDate,i)))
+    },
+    async saveTransport(item){
+      item.transportMode='🚗 開車';
+      const list=this.itinerary[this.selectedDate]||[];
+      await this.upsertShared('itinerary',item,this.selectedDate,list.findIndex(x=>x.id===item.id))
+    },
+    setupSortable(){
+      if(this.sortable){this.sortable.destroy();this.sortable=null}if(this.tab!=='itinerary')return;
+      const el=document.querySelector('#sortable');if(!el)return;
+      this.sortable=Sortable.create(el,{animation:180,draggable:'.card',delay:120,delayOnTouchOnly:true,touchStartThreshold:5,
+        onEnd:()=>{
+          const ids=[...el.querySelectorAll('.card')].map(n=>n.dataset.id).filter(Boolean);
+          const list=this.itinerary[this.selectedDate]||[],map=Object.fromEntries(list.map(x=>[x.id,x]));
+          this.itinerary[this.selectedDate]=ids.map(id=>map[id]).filter(Boolean);this.saveDayOrder();this.autoEstimateDay(this.selectedDate,true);this.flash('已更新排序')
+        }})
+    },
+    onTabScroll(){
+      clearTimeout(this.tabScrollTimer);
+      this.tabScrollTimer=setTimeout(()=>{
+        const scroller=this.$refs.tabsScroller;
+        if(!scroller)return;
+        const buttons=[...scroller.querySelectorAll('.tab')];
+        if(!buttons.length)return;
+
+        const center=scroller.scrollTop + scroller.clientHeight/2;
+        let best=buttons[0];
+        let bestDist=Infinity;
+
+        buttons.forEach(btn=>{
+          const btnCenter=btn.offsetTop + btn.offsetHeight/2;
+          const dist=Math.abs(btnCenter-center);
+          if(dist<bestDist){
+            bestDist=dist;
+            best=btn;
+          }
+        });
+
+        const id=best.dataset.tabId;
+        if(id && id!==this.tab){
+          this.tab=id;
+        }
+
+        best.scrollIntoView({block:'nearest',behavior:'smooth'});
+      },80);
+    },
+    initPullToRefresh(){
+      const start=(e)=>{
+        if(window.scrollY>0)return;
+        if(e.touches?.length!==1)return;
+        this.pullRefresh.startY=e.touches[0].clientY;
+        this.pullRefresh.distance=0;
+        this.pullRefresh.active=false;
+        this.pullRefresh.ready=false;
+        this.pullRefresh.tracking=true;
+      };
+
+      const move=(e)=>{
+        if(!this.pullRefresh.tracking)return;
+        if(window.scrollY>0){
+          this.resetPullRefresh();
+          return;
+        }
+
+        const y=e.touches?.[0]?.clientY ?? 0;
+        const raw=y-this.pullRefresh.startY;
+        if(raw<=0){
+          this.resetPullRefresh();
+          return;
+        }
+
+        const distance=Math.min(110,raw*0.55);
+        this.pullRefresh.distance=distance;
+        this.pullRefresh.active=distance>12;
+        this.pullRefresh.ready=distance>=72;
+
+        document.documentElement.style.setProperty('--pull-distance',`${distance}px`);
+
+        if(this.pullRefresh.active && e.cancelable){
+          e.preventDefault();
+        }
+      };
+
+      const end=async ()=>{
+        if(!this.pullRefresh.tracking)return;
+        const shouldRefresh=this.pullRefresh.ready;
+        this.pullRefresh.tracking=false;
+
+        if(shouldRefresh){
+          this.pullRefresh.active=true;
+          this.pullRefresh.ready=true;
+          this.flash('正在更新…');
+
+          try{
+            if(this.pwa.swReg){
+              await this.pwa.swReg.update();
+            }
+            if('caches' in window){
+              const names=await caches.keys();
+              await Promise.all(
+                names
+                  .filter(n=>n.startsWith('jeju-trip-') && n!=='jeju-trip-v16l')
+                  .map(n=>caches.delete(n))
+              );
+            }
+          }catch(err){
+            console.warn('force update failed',err);
+          }
+
+          setTimeout(()=>{
+            const url=new URL(location.href);
+            url.searchParams.set('_refresh',Date.now().toString());
+            location.replace(url.toString());
+          },300);
+          return;
+        }
+
+        this.resetPullRefresh();
+      };
+
+      document.addEventListener('touchstart',start,{passive:true});
+      document.addEventListener('touchmove',move,{passive:false});
+      document.addEventListener('touchend',end,{passive:true});
+      document.addEventListener('touchcancel',()=>this.resetPullRefresh(),{passive:true});
+    },
+    resetPullRefresh(){
+      this.pullRefresh.startY=0;
+      this.pullRefresh.distance=0;
+      this.pullRefresh.active=false;
+      this.pullRefresh.ready=false;
+      this.pullRefresh.tracking=false;
+      document.documentElement.style.setProperty('--pull-distance','0px');
+    },
+    async initPWA(){
+      window.addEventListener('beforeinstallprompt',(e)=>{
+        e.preventDefault();
+        this.pwa.deferredPrompt=e;
+        this.flash('已可安裝成 App')
+      });
+
+      if('serviceWorker' in navigator){
+        try{
+          this.pwa.swReg=await navigator.serviceWorker.register('./sw.js?v=v16l',{updateViaCache:'none'});
+          await this.pwa.swReg.update();
+
+          let refreshing=false;
+          navigator.serviceWorker.addEventListener('controllerchange',()=>{
+            if(refreshing)return;
+            refreshing=true;
+            location.reload();
+          });
+
+          this.pwa.swReg.addEventListener('updatefound',()=>{
+            const worker=this.pwa.swReg.installing;
+            if(!worker)return;
+            worker.addEventListener('statechange',()=>{
+              if(worker.state==='installed' && navigator.serviceWorker.controller){
+                this.flash('發現新版，正在更新…');
+                worker.postMessage({type:'SKIP_WAITING'});
+              }
+            });
+          });
+
+          clearInterval(this.updateCheckTimer);
+          this.updateCheckTimer=setInterval(()=>{
+            this.pwa.swReg?.update().catch(()=>{});
+          },60000);
+        }catch(err){
+          console.warn('service worker register failed',err);
+        }
+      }
+    },
+    async installApp(){
+      const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+      if(this.pwa.deferredPrompt){
+        this.pwa.deferredPrompt.prompt();
+        try{await this.pwa.deferredPrompt.userChoice;}catch(e){}
+        this.pwa.deferredPrompt=null;
+        return;
+      }
+      if(isIOS){
+        alert('iPad / iPhone 請在 Safari 點「分享」→「加入主畫面」，就能像桌面 App 一樣使用。');
+      }else{
+        alert('如果目前沒有出現安裝提示，請改用 Chrome / Edge 開啟網站，再使用瀏覽器的「安裝 App」功能。');
+      }
+    },
+    async enableNotifications(){
+      if(!('Notification' in window)){
+        this.pwa.notificationPermission='unsupported';
+        alert('目前瀏覽器不支援通知功能。');
+        return;
+      }
+      if(Notification.permission==='granted'){
+        this.pwa.notificationPermission='granted';
+        this.flash('通知已開啟');
+        return;
+      }
+      const permission=await Notification.requestPermission();
+      this.pwa.notificationPermission=permission;
+      if(permission==='granted'){
+        this.flash('通知功能已開啟');
+        this.showLocalNotification('Jeju Girls Trip','已開啟旅程提醒通知');
+      }else{
+        this.flash('尚未開啟通知');
+      }
+    },
+    async showLocalNotification(title, body){
+      try{
+        if(this.pwa.swReg && this.pwa.notificationPermission==='granted'){
+          await this.pwa.swReg.showNotification(title,{
+            body,
+            icon:'./app-icon-192.png',
+            badge:'./app-icon-192.png',
+            tag:'jeju-trip-notice',
+            data:{url:location.href}
+          });
+        }else if(this.pwa.notificationPermission==='granted'){
+          new Notification(title,{body,icon:'./app-icon-192.png'});
+        }
+      }catch(err){
+        console.warn('show notification failed',err);
+      }
+    },
+    testNotification(){
+      if(this.pwa.notificationPermission!=='granted'){
+        this.enableNotifications();
+        return;
+      }
+      this.showLocalNotification('Jeju Girls Trip','這是一則測試通知，提醒功能已可使用。');
+    },
+    startReminderLoop(){
+      setTimeout(()=>this.checkUpcomingReminder(),2000);
+      setInterval(()=>this.checkUpcomingReminder(),60000);
+    },
+    checkUpcomingReminder(){
+      if(this.pwa.notificationPermission!=='granted') return;
+      const today=this.defaultDate();
+      const items=(this.itinerary[today]||[]).filter(x=>x.arrival && x.name);
+      if(!items.length) return;
+      const now=new Date();
+      items.forEach(item=>{
+        const [hh,mm]=String(item.arrival).split(':').map(v=>parseInt(v,10));
+        if(Number.isNaN(hh)||Number.isNaN(mm)) return;
+        const target=new Date(now);
+        target.setHours(hh,mm,0,0);
+        const diff=Math.round((target-now)/60000);
+        if(diff<0 || diff>30) return;
+        const key=`reminded-${today}-${item.id}`;
+        if(localStorage.getItem(key)) return;
+        localStorage.setItem(key,'1');
+        this.showLocalNotification('即將出發：'+item.name, `${item.arrival} · ${item.address || item.note || '請查看行程內容'}`);
+      });
+    },
+    async geocodePlace(item){
+      const text=String(item?.address||item?.name||'').trim();
+      if(!text)return null;
+
+      const cacheKey='kakao-geo:'+text;
+      try{
+        const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+        if(cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon))return cached;
+      }catch(e){}
+
+      const queries=[
+        String(item?.address||'').trim(),
+        text,
+        String(item?.name||'').trim()
+      ].filter((q,i,a)=>q && a.indexOf(q)===i);
+
+      for(const q of queries){
+        try{
+          const r=await fetch(this.routesApiUrl,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'geocode',query:q})
+          });
+          const d=await r.json().catch(()=>({}));
+          if(!r.ok)continue;
+          const point={lat:Number(d.lat),lon:Number(d.lon)};
+          if(Number.isFinite(point.lat)&&Number.isFinite(point.lon)){
+            localStorage.setItem(cacheKey,JSON.stringify(point));
+            return point;
+          }
+        }catch(err){
+          console.warn('Kakao geocode failed',q,err);
+        }
+      }
+      return null;
+    },
+    async estimateLeg(index,force=false){
+      const list=this.itinerary[this.selectedDate]||[];
+      const from=list[index],to=list[index+1];
+      if(!from||!to)return;
+
+      from.transportMode='🚗 開車';
+      const routeKey=[
+        String(from.address||from.name||'').trim(),
+        String(to.address||to.name||'').trim()
+      ].join('→');
+
+      if(!force && from.routeKey===routeKey && Number(from.travelKm)>0 && Number(from.travelMinutes)>0)return;
+
+      from.routeStatus='loading';
+      try{
+        const a=await this.geocodePlace(from);
+        const b=await this.geocodePlace(to);
+        if(!a||!b)throw new Error('Kakao 找不到地址或地點座標，請確認韓文地址或店名');
+
+        const r=await fetch(this.routesApiUrl,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            origin:`${a.lon},${a.lat}`,
+            destination:`${b.lon},${b.lat}`
+          })
+        });
+
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok){
+          const detail=d?.details?.error?.message || d?.details?.msg || d?.error || '路線服務無法連線';
+          throw new Error(detail);
+        }
+
+        if(!Number.isFinite(Number(d.distanceKm)) || !Number.isFinite(Number(d.durationMinutes))){
+          throw new Error('Kakao Mobility 未回傳有效路線');
+        }
+
+        from.travelKm=Math.round(Number(d.distanceKm)*10)/10;
+        from.travelMinutes=Math.max(1,Math.round(Number(d.durationMinutes)));
+        from.routeKey=routeKey;
+        from.routeStatus='done';
+        from.routeSource='Kakao Mobility';
+        await this.upsertShared('itinerary',from,this.selectedDate,index);
+      }catch(err){
+        console.warn('estimate route failed',err);
+        from.routeStatus='error';
+        from.transportMode='🚗 開車';
+        if(force)this.flash('路線估算失敗：'+(err?.message||'請確認地址'));
+      }
+    },
+    async autoEstimateDay(date=this.selectedDate,force=false){
+      if(date!==this.selectedDate)return;
+      const list=this.itinerary[date]||[];
+      for(let i=0;i<list.length-1;i++){
+        await this.estimateLeg(i,force);
+      }
+    },
+    openNaver(x){
+      const q=encodeURIComponent(x.address||x.name||'제주도'),appname=encodeURIComponent(location.href.split('#')[0]);
+      location.href=`nmap://search?query=${q}&appname=${appname}`;
+      setTimeout(()=>{if(document.visibilityState==='visible')window.open(`https://map.naver.com/p/search/${q}`,'_blank')},900)
+    },
+    newTrip(){this.modal={type:'trip',edit:false,id:null};this.imageProcessing=false;this.form={category:'🏝️景點',name:'',arrival:'09:00',address:'',hours:'',booking:'',ticket:'',image:'',note:'',travelKm:0,travelMinutes:20,transportMode:'🚗 開車'}},
+    editTrip(x){this.modal={type:'trip',edit:true,id:x.id};this.form=JSON.parse(JSON.stringify(x));this.imageProcessing=false},
+    saveTrip(){
+      if(this.imageProcessing)return this.flash('照片還在處理中，請稍候');
+      if(!String(this.form.name||'').trim())return this.flash('請輸入名稱');
+      const a=this.itinerary[this.selectedDate]||[],x={...this.form,id:this.modal.edit?this.form.id:this.uid(),date:this.selectedDate};
+      if(this.modal.edit){const i=a.findIndex(v=>v.id===x.id);if(i>=0)a[i]=x}else a.push(x);
+      a.sort((m,n)=>(m.arrival||'99:99').localeCompare(n.arrival||'99:99'));this.itinerary[this.selectedDate]=a;this.saveDayOrder();this.closeModal();this.$nextTick(()=>{this.setupSortable();this.autoEstimateDay(this.selectedDate,true)})
+    },
+    deleteTrip(){if(confirm('確定刪除這筆行程嗎？刪除後無法復原。')){this.itinerary[this.selectedDate]=(this.itinerary[this.selectedDate]||[]).filter(x=>x.id!==this.form.id);this.deleteShared(this.form.id);this.closeModal();this.autoEstimateDay(this.selectedDate,true)}},
+    editInfoCard(card){
+      this.modal={type:'infoCard',edit:true,id:card.id};
+      this.form=JSON.parse(JSON.stringify(card));
+      this.imageProcessing=false;
+    },
+    async saveInfoCard(){
+      if(this.imageProcessing)return this.flash('照片還在處理中，請稍候');
+      if(!String(this.form.title||'').trim())return this.flash('請輸入卡片標題');
+      const x={...this.form,id:this.form.id||this.modal.id};
+      const i=this.infoCards.findIndex(v=>v.id===x.id);
+      if(i>=0)this.infoCards[i]=x;
+      await this.upsertShared('info',x,null,Math.max(0,i));
+      this.closeModal();
+      this.flash('資訊卡已更新');
+    },
+    newGeneric(){this.modal={type:'generic',edit:false,id:null};this.form={name:'',price:0,currency:'KRW',hours:'',address:'',image:'',note:''}},
+    editGeneric(x){this.modal={type:'generic',edit:true,id:x.id};this.form=JSON.parse(JSON.stringify(x))},
+    async saveGeneric(){
+      if(!String(this.form.name||'').trim())return this.flash('請輸入名稱');
+      const a=this[this.tab],x={...this.form,id:this.modal.edit?this.form.id:this.uid()};
+      if(this.modal.edit){const i=a.findIndex(v=>v.id===x.id);if(i>=0)a[i]=x}else a.unshift(x);
+      await this.upsertShared(this.tab,x,null,0);
+      this.closeModal()
+    },
+    async deleteGeneric(){if(confirm('確定刪除？')){
+      const id=this.form.id;this[this.tab]=this[this.tab].filter(x=>x.id!==id);
+      await this.deleteShared(id);
+      this.closeModal()
+    }},
+    newExpense(){this.modal={type:'expense',edit:false,id:null};this.form={category:'🍽️飲食',name:'',date:this.defaultDate(),amount:0,currency:'KRW',payment:'💳信用卡',image:'',note:''}},
+    editExpense(x){this.modal={type:'expense',edit:true,id:x.id};this.form=JSON.parse(JSON.stringify(x))},
+    saveExpense(){if(!String(this.form.name||'').trim())return this.flash('請輸入名稱');const x={...this.form,id:this.modal.edit?this.form.id:this.uid()};if(this.modal.edit){const i=this.expenses.findIndex(v=>v.id===x.id);if(i>=0)this.expenses[i]=x}else this.expenses.unshift(x);this.savePrivate();this.closeModal()},
+    deleteExpense(){if(confirm('確定刪除這筆花費？')){this.expenses=this.expenses.filter(x=>x.id!==this.form.id);this.savePrivate();this.closeModal()}},
+    newAdvance(){this.modal={type:'advance',edit:false,id:null};this.form={category:'🍽️飲食',name:'',date:this.defaultDate(),amount:0,currency:'KRW',payers:[],sharers:[],image:'',note:''}},
+    editAdvance(x){this.modal={type:'advance',edit:true,id:x.id};this.form=JSON.parse(JSON.stringify(x))},
+    async saveAdvance(){
+      if(!String(this.form.name||'').trim())return this.flash('請輸入名稱');
+      if(!this.form.payers.length||!this.form.sharers.length)return this.flash('請勾選付款人與分攤人');
+      const x={...this.form,id:this.modal.edit?this.form.id:this.uid()};
+      if(this.modal.edit){const i=this.advances.findIndex(v=>v.id===x.id);if(i>=0)this.advances[i]=x}else this.advances.unshift(x);
+      await this.upsertShared('advances',x,null,0);this.closeModal()
+    },
+    async deleteAdvance(){if(confirm('確定刪除這筆分帳費？')){
+      const id=this.form.id;this.advances=this.advances.filter(x=>x.id!==id);await this.deleteShared(id);this.closeModal()
+    }},
+    async pickImage(e){
+      const f=e.target.files?.[0];if(!f)return;
+      this.imageProcessing=true;
+      try{
+        const data=await new Promise((resolve,reject)=>{
+          const r=new FileReader();
+          r.onload=()=>resolve(r.result);
+          r.onerror=()=>reject(new Error('照片讀取失敗'));
+          r.readAsDataURL(f);
+        });
+
+        const im=await new Promise((resolve,reject)=>{
+          const img=new Image();
+          img.onload=()=>resolve(img);
+          img.onerror=()=>reject(new Error('照片解析失敗'));
+          img.src=data;
+        });
+
+        const max=1000;
+        const scale=Math.min(1,max/Math.max(im.width,im.height));
+        const c=document.createElement('canvas');
+        c.width=Math.round(im.width*scale);
+        c.height=Math.round(im.height*scale);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        this.form.image=c.toDataURL('image/jpeg',.76);
+      }catch(err){
+        console.warn('pickImage failed',err);
+        this.flash(err?.message||'照片處理失敗');
+      }finally{
+        this.imageProcessing=false;
+      }
+    },
+    defaultDate(){const d=new Date().toISOString().slice(0,10);return d>='2026-09-19'&&d<='2026-09-25'?d:this.selectedDate},
+    money(v){return new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Number(v)||0)},
+    toTwd(v,c){return c==='TWD'?(Number(v)||0):(Number(v)||0)*(this.fx.rate||0)},
+    convertFx(){this.fx.twd=(Number(this.fx.krw)||0)*(this.fx.rate||0)},
+    async loadFx(){
+      const sources=[
+        'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.min.json',
+        'https://latest.currency-api.pages.dev/v1/currencies/krw.min.json',
+        'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json',
+        'https://latest.currency-api.pages.dev/v1/currencies/krw.json'
+      ];
+
+      let lastError=null;
+
+      for(const url of sources){
+        try{
+          const r=await fetch(url,{cache:'no-store'});
+          if(!r.ok) throw new Error('HTTP '+r.status);
+
+          const d=await r.json();
+          const rate=Number(d?.krw?.twd);
+
+          if(!Number.isFinite(rate) || rate<=0){
+            throw new Error('KRW/TWD rate missing');
+          }
+
+          this.fx.rate=rate;
+          this.fx.date=d.date || new Date().toISOString().slice(0,10);
+          this.convertFx();
+          return;
+        }catch(err){
+          lastError=err;
+          console.warn('FX source failed:',url,err);
+        }
+      }
+
+      console.error('All FX sources failed:',lastError);
+      this.fx.rate=0;
+      this.fx.twd=0;
+      this.fx.date='讀取失敗';
+      this.flash('匯率服務暫時無法連線，請稍後重試');
+    },
+    async loadWeather(){
+      try{
+        const today=new Date().toISOString().slice(0,10);
+        const target=this.selectedDate;
+        let url='https://api.open-meteo.com/v1/forecast?latitude=33.4996&longitude=126.5312&current=temperature_2m,apparent_temperature,weather_code&timezone=Asia%2FSeoul';
+        // Open-Meteo forecast horizon may not include the trip yet. Use selected-day forecast only when reasonably near.
+        const days=(new Date(target+'T00:00:00')-new Date(today+'T00:00:00'))/86400000;
+        if(days>=0 && days<=15) url=`https://api.open-meteo.com/v1/forecast?latitude=33.4996&longitude=126.5312&daily=weather_code,temperature_2m_max,apparent_temperature_max&timezone=Asia%2FSeoul&start_date=${target}&end_date=${target}`;
+        const r=await fetch(url),d=await r.json();
+        if(d.daily){this.weather={temp:Math.round(d.daily.temperature_2m_max[0]),feels:Math.round(d.daily.apparent_temperature_max[0]),code:d.daily.weather_code[0],label:'當日預報'}}
+        else{this.weather={temp:Math.round(d.current.temperature_2m),feels:Math.round(d.current.apparent_temperature),code:d.current.weather_code,label:'目前濟州天氣（旅行日前會自動切換預報）'}}
+      }catch(e){this.weather.label='天氣暫時無法讀取'}
+    },
+    closeModal(){this.modal={type:null,edit:false,id:null};this.form={}},
+    flash(s){this.toast=s;setTimeout(()=>this.toast='',2200)}
+  }
+}).mount('#app')
+</script>
+</body>
+</html>
