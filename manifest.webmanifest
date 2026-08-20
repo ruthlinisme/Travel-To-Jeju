@@ -1,0 +1,27 @@
+{
+  "id": "./?app=jeju-girls-trip",
+  "name": "Jeju Girls Trip",
+  "short_name": "Jeju Trip",
+  "description": "四人共同編輯的濟州島旅程 App",
+  "start_url": "./index.html?v=v16j",
+  "display": "standalone",
+  "background_color": "#eefafe",
+  "theme_color": "#bce7f4",
+  "icons": [
+    {
+      "src": "./app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
